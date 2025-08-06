@@ -8,7 +8,11 @@ import java.util.List;
 
 public interface ProfessorRepository extends JpaRepository<Professor, Long> {
 
-    List<Professor> findByCadastradoTrue();
+    List<Professor> findAllByCadastradoIsTrue();
+
+    List<Professor> findAllByCursos_Id(Long cursoId);
+
+    List<Professor> findAllByDisciplinas_Id(Long disciplinaId);
 
 //    List<Professor> findByNomeContainingIgnoreCase(String nome);
 //    List<Professor> findByInstituicao_Id(Long instituicaoId);
