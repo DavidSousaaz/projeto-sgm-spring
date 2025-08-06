@@ -19,10 +19,10 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
-    @Value("${jwtSecret}")
+    @Value("${jwt.secret}")
     private String jwtSecret;
 
-    @Value("${jwtExpirationMs}")
+    @Value("${jwt.expirationMs}")
     private int jwtExpirationMs;
 
     public String generateToken(Authentication authentication) {
@@ -80,6 +80,4 @@ public class JwtService {
                 .getPayload();
         return claimsResolver.apply(claims);
     }
-
-
 }
