@@ -15,6 +15,6 @@ public class PessoaResponseDTO {
     protected String emailAcademico;
     protected String matricula;
     protected InstituicaoResponseDTO instituicaoResponseDTO;
-    protected List<Role> roles;
+    protected List<RoleResponseDTO> roles;
 
 }
