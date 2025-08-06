@@ -1,12 +1,10 @@
 package br.edu.ifpb.sgm.projeto_sgm.controller;
 
 import br.edu.ifpb.sgm.projeto_sgm.dto.LoginResquestDTO;
-import br.edu.ifpb.sgm.projeto_sgm.dto.PessoaRequestDTO;
 import br.edu.ifpb.sgm.projeto_sgm.dto.PessoaResponseDTO;
 import br.edu.ifpb.sgm.projeto_sgm.dto.TokenDTO;
-import br.edu.ifpb.sgm.projeto_sgm.model.Pessoa;
 import br.edu.ifpb.sgm.projeto_sgm.service.JwtService;
-import br.edu.ifpb.sgm.projeto_sgm.service.PessoaServiceImp;
+import br.edu.ifpb.sgm.projeto_sgm.service.PessoaService; // Injetando a interface
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -22,44 +20,36 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/auth")
 public class AuthController {
 
-    protected AuthenticationManager authenticationManager;
-    protected PessoaServiceImp pessoaServiceImp;
-    private JwtService jwtService;
+    private final AuthenticationManager authenticationManager;
+    private final PessoaService pessoaService; // Alterado para a interface
+    private final JwtService jwtService;
 
     public AuthController(
             AuthenticationManager authenticationManager,
             JwtService jwtService,
-            PessoaServiceImp pessoaServiceImp) {
+            PessoaService pessoaService) { // Alterado para a interface
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
-        this.pessoaServiceImp = pessoaServiceImp;
+        this.pessoaService = pessoaService;
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginResquestDTO login) {
-        try {
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(login.getMatricula(), login.getPassword()));
+    public ResponseEntity<TokenDTO> login(@RequestBody LoginResquestDTO login) {
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(login.getMatricula(), login.getPassword()));
 
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-            String token = jwtService.generateToken(authentication);
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        String token = jwtService.generateToken(authentication);
 
-            PessoaResponseDTO pessoaDTO = pessoaServiceImp.findDtoByMatricula(login.getMatricula());
-            TokenDTO tokendto = new TokenDTO(token, pessoaDTO);
+        PessoaResponseDTO pessoaDTO = pessoaService.findDtoByMatricula(login.getMatricula());
+        TokenDTO tokenDto = new TokenDTO(token, pessoaDTO);
 
-            return ResponseEntity.ok(tokendto);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-
-
+        return ResponseEntity.ok(tokenDto);
     }
 
     @PostMapping("/logout")
     public ResponseEntity<String> logout(HttpServletRequest request) {
-    // Remove a autenticação do usuário atual
         SecurityContextHolder.clearContext();
         return ResponseEntity.ok("Logout realizado com sucesso!");
     }
-
 }
