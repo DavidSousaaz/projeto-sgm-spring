@@ -2,78 +2,83 @@ package br.edu.ifpb.sgm.projeto_sgm.service;
 
 import br.edu.ifpb.sgm.projeto_sgm.dto.AtividadeRequestDTO;
 import br.edu.ifpb.sgm.projeto_sgm.dto.AtividadeResponseDTO;
-import br.edu.ifpb.sgm.projeto_sgm.exception.MonitoriaNotFoundException;
 import br.edu.ifpb.sgm.projeto_sgm.exception.AtividadeNotFoundException;
+import br.edu.ifpb.sgm.projeto_sgm.exception.MonitoriaNotFoundException;
 import br.edu.ifpb.sgm.projeto_sgm.mapper.AtividadeMapper;
 import br.edu.ifpb.sgm.projeto_sgm.model.Atividade;
 import br.edu.ifpb.sgm.projeto_sgm.model.Monitoria;
 import br.edu.ifpb.sgm.projeto_sgm.repository.AtividadeRepository;
 import br.edu.ifpb.sgm.projeto_sgm.repository.MonitoriaRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
-public class AtividadeServiceImp {
+public class AtividadeServiceImp implements AtividadeService {
 
-    @Autowired
-    private AtividadeRepository atividadeRepository;
+    private final AtividadeRepository atividadeRepository;
+    private final MonitoriaRepository monitoriaRepository;
+    private final AtividadeMapper atividadeMapper;
 
-    @Autowired
-    private MonitoriaRepository monitoriaRepository;
+    public AtividadeServiceImp(AtividadeRepository atividadeRepository, MonitoriaRepository monitoriaRepository, AtividadeMapper atividadeMapper) {
+        this.atividadeRepository = atividadeRepository;
+        this.monitoriaRepository = monitoriaRepository;
+        this.atividadeMapper = atividadeMapper;
+    }
 
-    @Autowired
-    private AtividadeMapper atividadeMapper;
+    @Override
+    public AtividadeResponseDTO save(AtividadeRequestDTO dto) {
+        Monitoria monitoria = monitoriaRepository.findById(dto.getMonitoriaId())
+                .orElseThrow(() -> new MonitoriaNotFoundException("Monitoria com ID " + dto.getMonitoriaId() + " não encontrada."));
 
-    public ResponseEntity<AtividadeResponseDTO> salvar(AtividadeRequestDTO dto) {
         Atividade atividade = atividadeMapper.toEntity(dto);
-        atividade.setMonitoria(buscarMonitoria(dto.getMonitoriaId()));
-        Atividade salva = atividadeRepository.save(atividade);
-        return ResponseEntity.status(HttpStatus.CREATED).body(atividadeMapper.toResponseDTO(salva));
+        atividade.setMonitoria(monitoria);
+
+        Atividade savedAtividade = atividadeRepository.save(atividade);
+        return atividadeMapper.toResponseDTO(savedAtividade);
     }
 
-    public ResponseEntity<AtividadeResponseDTO> buscarPorId(Long id) {
-        Atividade atividade = atividadeRepository.findById(id)
-                .orElseThrow(AtividadeNotFoundException::new);
-        return ResponseEntity.ok(atividadeMapper.toResponseDTO(atividade));
-    }
-
-    public ResponseEntity<List<AtividadeResponseDTO>> listarTodas() {
-        List<Atividade> atividades = atividadeRepository.findAll();
-        List<AtividadeResponseDTO> dtos = atividades.stream()
+    @Override
+    @Transactional(readOnly = true)
+    public List<AtividadeResponseDTO> findAll() {
+        return atividadeRepository.findAll().stream()
                 .map(atividadeMapper::toResponseDTO)
-                .toList();
-        return ResponseEntity.ok(dtos);
+                .collect(Collectors.toList());
     }
 
-    public ResponseEntity<AtividadeResponseDTO> atualizar(Long id, AtividadeRequestDTO dto) {
+    @Override
+    @Transactional(readOnly = true)
+    public AtividadeResponseDTO findById(Long id) {
+        return atividadeRepository.findById(id)
+                .map(atividadeMapper::toResponseDTO)
+                .orElseThrow(() -> new AtividadeNotFoundException("Atividade com ID " + id + " não encontrada."));
+    }
+
+    @Override
+    public AtividadeResponseDTO update(Long id, AtividadeRequestDTO dto) {
         Atividade atividade = atividadeRepository.findById(id)
-                .orElseThrow(AtividadeNotFoundException::new);
+                .orElseThrow(() -> new AtividadeNotFoundException("Atividade com ID " + id + " não encontrada para atualização."));
 
         atividadeMapper.updateAtividadeFromDto(dto, atividade);
 
         if (dto.getMonitoriaId() != null) {
-            atividade.setMonitoria(buscarMonitoria(dto.getMonitoriaId()));
+            Monitoria monitoria = monitoriaRepository.findById(dto.getMonitoriaId())
+                    .orElseThrow(() -> new MonitoriaNotFoundException("Monitoria com ID " + dto.getMonitoriaId() + " não encontrada."));
+            atividade.setMonitoria(monitoria);
         }
 
-        Atividade atualizada = atividadeRepository.save(atividade);
-        return ResponseEntity.ok(atividadeMapper.toResponseDTO(atualizada));
+        Atividade updatedAtividade = atividadeRepository.save(atividade);
+        return atividadeMapper.toResponseDTO(updatedAtividade);
     }
 
-    public ResponseEntity<Void> deletar(Long id) {
-        Atividade atividade = atividadeRepository.findById(id)
-                .orElseThrow(AtividadeNotFoundException::new);
-        atividadeRepository.delete(atividade);
-        return ResponseEntity.noContent().build();
-    }
-
-    private Monitoria buscarMonitoria(Long id) {
-        return monitoriaRepository.findById(id)
-                .orElseThrow(() -> new MonitoriaNotFoundException("Monitoria com ID " + id + " não encontrada."));
+    @Override
+    public void delete(Long id) {
+        if (!atividadeRepository.existsById(id)) {
+            throw new AtividadeNotFoundException("Atividade com ID " + id + " não encontrada para deleção.");
+        }
+        atividadeRepository.deleteById(id);
     }
 }

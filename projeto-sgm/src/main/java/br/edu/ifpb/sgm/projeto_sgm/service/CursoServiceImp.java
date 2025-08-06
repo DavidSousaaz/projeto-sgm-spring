@@ -2,94 +2,113 @@ package br.edu.ifpb.sgm.projeto_sgm.service;
 
 import br.edu.ifpb.sgm.projeto_sgm.dto.CursoRequestDTO;
 import br.edu.ifpb.sgm.projeto_sgm.dto.CursoResponseDTO;
-import br.edu.ifpb.sgm.projeto_sgm.exception.*;
+import br.edu.ifpb.sgm.projeto_sgm.exception.CursoNotFoundException;
+import br.edu.ifpb.sgm.projeto_sgm.exception.InstituicaoNotFoundException;
 import br.edu.ifpb.sgm.projeto_sgm.mapper.CursoMapper;
 import br.edu.ifpb.sgm.projeto_sgm.model.*;
 import br.edu.ifpb.sgm.projeto_sgm.repository.CursoRepository;
 import br.edu.ifpb.sgm.projeto_sgm.repository.DisciplinaRepository;
 import br.edu.ifpb.sgm.projeto_sgm.repository.InstituicaoRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import br.edu.ifpb.sgm.projeto_sgm.repository.ProfessorRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 @Transactional
-public class CursoServiceImp {
+public class CursoServiceImp implements CursoService {
 
-    @Autowired
-    private CursoRepository cursoRepository;
+    private final CursoRepository cursoRepository;
+    private final InstituicaoRepository instituicaoRepository;
+    private final CursoMapper cursoMapper;
 
-    @Autowired
-    private InstituicaoRepository instituicaoRepository;
+    private final ProfessorRepository professorRepository;
+    private final DisciplinaRepository disciplinaRepository;
+    private final DisciplinaService disciplinaService;
 
-    @Autowired
-    private DisciplinaRepository disciplinaRepository;
+    public CursoServiceImp(CursoRepository cursoRepository, InstituicaoRepository instituicaoRepository, CursoMapper cursoMapper, ProfessorRepository professorRepository, DisciplinaRepository disciplinaRepository, DisciplinaService disciplinaService) {
+        this.cursoRepository = cursoRepository;
+        this.instituicaoRepository = instituicaoRepository;
+        this.cursoMapper = cursoMapper;
+        this.professorRepository = professorRepository;
+        this.disciplinaRepository = disciplinaRepository;
+        this.disciplinaService = disciplinaService;
+    }
 
-    @Autowired
-    private CursoMapper cursoMapper;
+    @Override
+    public CursoResponseDTO save(CursoRequestDTO dto) {
+        // Lógica de negócio: buscar a entidade Instituicao relacionada
+        Instituicao instituicao = instituicaoRepository.findById(dto.getInstituicaoId())
+                .orElseThrow(() -> new InstituicaoNotFoundException("Instituição com ID " + dto.getInstituicaoId() + " não encontrada."));
 
-
-
-    public ResponseEntity<CursoResponseDTO> salvar(CursoRequestDTO dto) {
         Curso curso = cursoMapper.toEntity(dto);
+        curso.setInstituicao(instituicao);
 
-        curso.setInstituicao(buscarInstituicao(dto.getInstituicaoId()));
-        curso.setNivel(NivelCurso.valueOf(dto.getNivelString()));
-        Curso salvo = cursoRepository.save(curso);
-        return ResponseEntity.status(HttpStatus.CREATED).body(cursoMapper.toResponseDTO(salvo));
+        // Lógica de negócio: converter a String de nível para o Enum correspondente
+        try {
+            curso.setNivel(NivelCurso.valueOf(dto.getNivelString().toUpperCase()));
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Nível de curso inválido: " + dto.getNivelString());
+        }
+
+        Curso savedCurso = cursoRepository.save(curso);
+        return cursoMapper.toResponseDTO(savedCurso);
     }
 
-    public ResponseEntity<CursoResponseDTO> buscarPorId(Long id) {
-        Curso curso = cursoRepository.findById(id)
-                .orElseThrow(CursoNotFoundException::new);
-        return ResponseEntity.ok(cursoMapper.toResponseDTO(curso));
-    }
-
-
-    public ResponseEntity<List<CursoResponseDTO>> listarTodos() {
-        List<Curso> cursos = cursoRepository.findAll();
-        List<CursoResponseDTO> dtos = cursos.stream()
+    @Override
+    @Transactional(readOnly = true)
+    public List<CursoResponseDTO> findAll() {
+        return cursoRepository.findAll().stream()
                 .map(cursoMapper::toResponseDTO)
                 .collect(Collectors.toList());
-        return ResponseEntity.ok(dtos);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public CursoResponseDTO findById(Long id) {
+        return cursoRepository.findById(id)
+                .map(cursoMapper::toResponseDTO)
+                .orElseThrow(() -> new CursoNotFoundException("Curso com ID " + id + " não encontrado."));
+    }
 
-    public ResponseEntity<CursoResponseDTO> atualizar(Long id, CursoRequestDTO dto) {
+    @Override
+    public CursoResponseDTO update(Long id, CursoRequestDTO dto) {
         Curso curso = cursoRepository.findById(id)
-                .orElseThrow(CursoNotFoundException::new);
+                .orElseThrow(() -> new CursoNotFoundException("Curso com ID " + id + " não encontrado para atualização."));
 
         cursoMapper.updateCursoFromDto(dto, curso);
 
         if (dto.getInstituicaoId() != null) {
-            curso.setInstituicao(buscarInstituicao(dto.getInstituicaoId()));
+            Instituicao instituicao = instituicaoRepository.findById(dto.getInstituicaoId())
+                    .orElseThrow(() -> new InstituicaoNotFoundException("Instituição com ID " + dto.getInstituicaoId() + " não encontrada."));
+            curso.setInstituicao(instituicao);
         }
 
-        if (dto.getNivelString() != null) {
-            curso.setNivel(NivelCurso.valueOf(dto.getNivelString()));
+        if (dto.getNivelString() != null && !dto.getNivelString().isBlank()) {
+            try {
+                curso.setNivel(NivelCurso.valueOf(dto.getNivelString().toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Nível de curso inválido: " + dto.getNivelString());
+            }
         }
 
-        Curso atualizado = cursoRepository.save(curso);
-        return ResponseEntity.ok(cursoMapper.toResponseDTO(atualizado));
+        Curso updatedCurso = cursoRepository.save(curso);
+        return cursoMapper.toResponseDTO(updatedCurso);
     }
 
-
-    public ResponseEntity<Void> deletar(Long id) {
+    @Override
+    public void delete(Long id) {
         Curso curso = cursoRepository.findById(id)
-                .orElseThrow(CursoNotFoundException::new);
+                .orElseThrow(() -> new CursoNotFoundException("Curso com ID " + id + " não encontrado."));
+
+        List<Professor> coordenadores = professorRepository.findAllByCursos_Id(id);
+        coordenadores.forEach(p -> p.getCursos().remove(curso));
+
+        List<Disciplina> disciplinas = disciplinaRepository.findAllByCursoId(id);
+        disciplinas.forEach(d -> disciplinaService.delete(d.getId()));
+
         cursoRepository.delete(curso);
-        return ResponseEntity.noContent().build();
     }
-
-    private Instituicao buscarInstituicao(Long id) {
-        return instituicaoRepository.findById(id)
-                .orElseThrow(() -> new InstituicaoNotFoundException("Instituição com ID " + id + " não encontrada."));
-    }
-
 }

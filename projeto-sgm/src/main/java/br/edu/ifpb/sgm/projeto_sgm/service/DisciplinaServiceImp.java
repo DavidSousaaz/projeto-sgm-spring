@@ -4,88 +4,101 @@ import br.edu.ifpb.sgm.projeto_sgm.dto.DisciplinaRequestDTO;
 import br.edu.ifpb.sgm.projeto_sgm.dto.DisciplinaResponseDTO;
 import br.edu.ifpb.sgm.projeto_sgm.exception.CursoNotFoundException;
 import br.edu.ifpb.sgm.projeto_sgm.exception.DisciplinaNotFoundException;
-import br.edu.ifpb.sgm.projeto_sgm.exception.ProfessorNotFoundException;
 import br.edu.ifpb.sgm.projeto_sgm.mapper.DisciplinaMapper;
-import br.edu.ifpb.sgm.projeto_sgm.model.Curso;
-import br.edu.ifpb.sgm.projeto_sgm.model.Disciplina;
-import br.edu.ifpb.sgm.projeto_sgm.model.Professor;
-import br.edu.ifpb.sgm.projeto_sgm.repository.CursoRepository;
-import br.edu.ifpb.sgm.projeto_sgm.repository.DisciplinaRepository;
-import br.edu.ifpb.sgm.projeto_sgm.repository.ProfessorRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import br.edu.ifpb.sgm.projeto_sgm.model.*;
+import br.edu.ifpb.sgm.projeto_sgm.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
-public class DisciplinaServiceImp {
+public class DisciplinaServiceImp implements DisciplinaService {
 
-    @Autowired
-    private DisciplinaRepository disciplinaRepository;
+    private final DisciplinaRepository disciplinaRepository;
+    private final CursoRepository cursoRepository;
+    private final DisciplinaMapper disciplinaMapper;
+    private final MonitoriaRepository monitoriaRepository; // Adicione esta dependência
+    private final MonitoriaService monitoriaService;
+    private final ProfessorRepository professorRepository;
+    private final AlunoRepository alunoRepository;
 
-    @Autowired
-    private CursoRepository cursoRepository;
+    public DisciplinaServiceImp(DisciplinaRepository disciplinaRepository, CursoRepository cursoRepository, DisciplinaMapper disciplinaMapper, MonitoriaRepository monitoriaRepository, MonitoriaService monitoriaService, ProfessorRepository professorRepository, AlunoRepository alunoRepository) {
+        this.disciplinaRepository = disciplinaRepository;
+        this.cursoRepository = cursoRepository;
+        this.disciplinaMapper = disciplinaMapper;
+        this.monitoriaRepository = monitoriaRepository;
+        this.monitoriaService = monitoriaService;
+        this.professorRepository = professorRepository;
+        this.alunoRepository = alunoRepository;
+    }
 
-    @Autowired
-    private ProfessorRepository professorRepository;
+    @Override
+    public DisciplinaResponseDTO save(DisciplinaRequestDTO dto) {
+        // Lógica de negócio: buscar a entidade Curso relacionada
+        Curso curso = cursoRepository.findById(dto.getCursoId())
+                .orElseThrow(() -> new CursoNotFoundException("Curso com ID " + dto.getCursoId() + " não encontrado."));
 
-    @Autowired
-    private DisciplinaMapper disciplinaMapper;
-
-    public ResponseEntity<DisciplinaResponseDTO> salvar(DisciplinaRequestDTO dto) {
         Disciplina disciplina = disciplinaMapper.toEntity(dto);
-        disciplina.setCurso(buscarCurso(dto.getCursoId()));
-        Disciplina salva = disciplinaRepository.save(disciplina);
-        return ResponseEntity.status(HttpStatus.CREATED).body(disciplinaMapper.toResponseDTO(salva));
+        disciplina.setCurso(curso);
+
+        Disciplina savedDisciplina = disciplinaRepository.save(disciplina);
+        return disciplinaMapper.toResponseDTO(savedDisciplina);
     }
 
-    public ResponseEntity<DisciplinaResponseDTO> buscarPorId(Long id) {
-        Disciplina disciplina = disciplinaRepository.findById(id)
-                .orElseThrow(() -> new DisciplinaNotFoundException("Disciplina com ID " + id + " não encontrada."));
-        return ResponseEntity.ok(disciplinaMapper.toResponseDTO(disciplina));
-    }
-
-    public ResponseEntity<List<DisciplinaResponseDTO>> listarTodos() {
-        List<Disciplina> disciplinas = disciplinaRepository.findAll();
-        List<DisciplinaResponseDTO> dtos = disciplinas.stream()
+    @Override
+    @Transactional(readOnly = true)
+    public List<DisciplinaResponseDTO> findAll() {
+        return disciplinaRepository.findAll().stream()
                 .map(disciplinaMapper::toResponseDTO)
-                .toList();
-        return ResponseEntity.ok(dtos);
+                .collect(Collectors.toList());
     }
 
-    public ResponseEntity<DisciplinaResponseDTO> atualizar(Long id, DisciplinaRequestDTO dto) {
-        Disciplina disciplina = disciplinaRepository.findById(id)
+    @Override
+    @Transactional(readOnly = true)
+    public DisciplinaResponseDTO findById(Long id) {
+        return disciplinaRepository.findById(id)
+                .map(disciplinaMapper::toResponseDTO)
                 .orElseThrow(() -> new DisciplinaNotFoundException("Disciplina com ID " + id + " não encontrada."));
+    }
+
+    @Override
+    public DisciplinaResponseDTO update(Long id, DisciplinaRequestDTO dto) {
+        Disciplina disciplina = disciplinaRepository.findById(id)
+                .orElseThrow(() -> new DisciplinaNotFoundException("Disciplina com ID " + id + " não encontrada para atualização."));
 
         disciplinaMapper.updateDisciplinaFromDto(dto, disciplina);
 
+        // Se o DTO de atualização inclui um novo cursoId, busca e atualiza a associação
         if (dto.getCursoId() != null) {
-            disciplina.setCurso(buscarCurso(dto.getCursoId()));
+            Curso curso = cursoRepository.findById(dto.getCursoId())
+                    .orElseThrow(() -> new CursoNotFoundException("Curso com ID " + dto.getCursoId() + " não encontrado."));
+            disciplina.setCurso(curso);
         }
 
-        Disciplina atualizada = disciplinaRepository.save(disciplina);
-        return ResponseEntity.ok(disciplinaMapper.toResponseDTO(atualizada));
+        Disciplina updatedDisciplina = disciplinaRepository.save(disciplina);
+        return disciplinaMapper.toResponseDTO(updatedDisciplina);
     }
 
-    public ResponseEntity<Void> deletar(Long id) {
+    @Override
+    public void delete(Long id) {
         Disciplina disciplina = disciplinaRepository.findById(id)
                 .orElseThrow(() -> new DisciplinaNotFoundException("Disciplina com ID " + id + " não encontrada."));
+
+        List<Monitoria> monitorias = monitoriaRepository.findAllByDisciplinaId(id);
+        monitorias.forEach(monitoria -> monitoriaService.delete(monitoria.getId()));
+
+        List<Professor> professores = professorRepository.findAllByDisciplinas_Id(id);
+        professores.forEach(p -> p.getDisciplinas().remove(disciplina));
+
+        List<Aluno> alunosComDisciplinaPaga = alunoRepository.findAllByDisciplinasPagas_Id(id);
+        alunosComDisciplinaPaga.forEach(a -> a.getDisciplinasPagas().remove(disciplina));
+
+        List<Aluno> alunosMonitores = alunoRepository.findAllByDisciplinaMonitoria_Id(id);
+        alunosMonitores.forEach(a -> a.getDisciplinaMonitoria().remove(disciplina));
+
         disciplinaRepository.delete(disciplina);
-        return ResponseEntity.noContent().build();
-    }
-
-    // Métodos auxiliares
-    private Curso buscarCurso(Long id) {
-        return cursoRepository.findById(id)
-                .orElseThrow(() -> new CursoNotFoundException("Curso com ID " + id + " não encontrado."));
-    }
-
-    private Professor buscarProfessor(Long id) {
-        return professorRepository.findById(id)
-                .orElseThrow(() -> new ProfessorNotFoundException("Professor com ID " + id + " não encontrado."));
     }
 }

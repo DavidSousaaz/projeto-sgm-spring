@@ -2,167 +2,158 @@ package br.edu.ifpb.sgm.projeto_sgm.service;
 
 import br.edu.ifpb.sgm.projeto_sgm.dto.AlunoRequestDTO;
 import br.edu.ifpb.sgm.projeto_sgm.dto.AlunoResponseDTO;
-import br.edu.ifpb.sgm.projeto_sgm.exception.DisciplinaNotFoundException;
-import br.edu.ifpb.sgm.projeto_sgm.exception.AlunoNotFoundException;
-import br.edu.ifpb.sgm.projeto_sgm.exception.InstituicaoNotFoundException;
+import br.edu.ifpb.sgm.projeto_sgm.exception.*;
 import br.edu.ifpb.sgm.projeto_sgm.mapper.AlunoMapper;
 import br.edu.ifpb.sgm.projeto_sgm.mapper.PessoaMapper;
 import br.edu.ifpb.sgm.projeto_sgm.model.*;
 import br.edu.ifpb.sgm.projeto_sgm.repository.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import br.edu.ifpb.sgm.projeto_sgm.util.Constants;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static br.edu.ifpb.sgm.projeto_sgm.util.Constants.DISCENTE;
-
 @Service
 @Transactional
-public class AlunoServiceImp {
+public class AlunoServiceImp implements AlunoService {
 
-    @Autowired
-    private AlunoRepository alunoRepository;
+    private final AlunoRepository alunoRepository;
+    private final PessoaRepository pessoaRepository;
+    private final RoleRepository roleRepository;
+    private final DisciplinaRepository disciplinaRepository;
+    private final InstituicaoRepository instituicaoRepository;
+    private final AlunoMapper alunoMapper;
+    private final PessoaMapper pessoaMapper;
+    private final PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private RoleRepository roleRepository;
+    public AlunoServiceImp(AlunoRepository alunoRepository, PessoaRepository pessoaRepository, RoleRepository roleRepository, DisciplinaRepository disciplinaRepository, InstituicaoRepository instituicaoRepository, AlunoMapper alunoMapper, PessoaMapper pessoaMapper, PasswordEncoder passwordEncoder) {
+        this.alunoRepository = alunoRepository;
+        this.pessoaRepository = pessoaRepository;
+        this.roleRepository = roleRepository;
+        this.disciplinaRepository = disciplinaRepository;
+        this.instituicaoRepository = instituicaoRepository;
+        this.alunoMapper = alunoMapper;
+        this.pessoaMapper = pessoaMapper;
+        this.passwordEncoder = passwordEncoder;
+    }
 
-    @Autowired
-    private PessoaRepository pessoaRepository;
+    @Override
+    public AlunoResponseDTO save(AlunoRequestDTO dto) {
+        // 1. Mapeia e prepara a entidade Pessoa
+        Pessoa pessoa = pessoaMapper.fromPessoa(dto);
+        pessoa.setInstituicao(buscarInstituicao(dto.getInstituicaoId()));
+        pessoa.setSenha(passwordEncoder.encode(dto.getSenha())); // Criptografa a senha
 
-    @Autowired
-    private DisciplinaRepository disciplinaRepository;
-
-    @Autowired
-    private InstituicaoRepository instituicaoRepository;
-
-    @Autowired
-    private AlunoMapper alunoMapper;
-
-    @Autowired
-    private PessoaMapper pessoaMapper;
-
-
-    public ResponseEntity<AlunoResponseDTO> salvar(AlunoRequestDTO alunoRequestDTO){
-        Pessoa pessoa = pessoaMapper.fromPessoa(alunoRequestDTO);
-        pessoa.setInstituicao(buscarInstituicao(alunoRequestDTO.getInstituicaoId()));
-
-        Role alunoRole = roleRepository.findByRole("ROLE_" + DISCENTE)
+        Role alunoRole = roleRepository.findByRole("ROLE_" + Constants.DISCENTE)
                 .orElseThrow(() -> new RuntimeException("ERRO CRÍTICO: Role DISCENTE não encontrada no banco!"));
         pessoa.setRoles(List.of(alunoRole));
+
+        // 2. Salva a Pessoa para gerar o ID
         Pessoa pessoaSalva = pessoaRepository.save(pessoa);
+
+        // 3. Cria e salva o Aluno, associando à Pessoa
         Aluno aluno = new Aluno();
-        aluno.setDisciplinasPagas(buscarDisciplinas(alunoRequestDTO.getDisciplinasPagasId()));
-        aluno.setDisciplinaMonitoria(buscarDisciplinas(alunoRequestDTO.getDisciplinasMonitoriaId()));
         aluno.setPessoa(pessoaSalva);
+        aluno.setDisciplinasPagas(buscarDisciplinas(dto.getDisciplinasPagasId()));
+        aluno.setDisciplinaMonitoria(buscarDisciplinas(dto.getDisciplinasMonitoriaId()));
 
-        Aluno salvo = alunoRepository.save(aluno);
-        return ResponseEntity.status(HttpStatus.CREATED).body(alunoMapper.toResponseDTO(salvo));
+        Aluno savedAluno = alunoRepository.save(aluno);
+        return alunoMapper.toResponseDTO(savedAluno);
     }
 
-    public ResponseEntity<AlunoResponseDTO> buscarPorId(Long id) {
+    @Override
+    @Transactional(readOnly = true)
+    public List<AlunoResponseDTO> findAll() {
+        // Altere a chamada para o novo método
+        return alunoRepository.findAllByCadastradoIsTrue().stream()
+                .map(alunoMapper::toResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public AlunoResponseDTO findById(Long id) {
+        return alunoRepository.findById(id)
+                .map(alunoMapper::toResponseDTO)
+                .orElseThrow(() -> new AlunoNotFoundException("Aluno com ID " + id + " não encontrado."));
+    }
+
+    @Override
+    public AlunoResponseDTO update(Long id, AlunoRequestDTO dto) {
         Aluno aluno = alunoRepository.findById(id)
-                .orElseThrow(AlunoNotFoundException::new);
-        return ResponseEntity.ok(alunoMapper.toResponseDTO(aluno));
-    }
+                .orElseThrow(() -> new AlunoNotFoundException("Aluno com ID " + id + " não encontrado para atualização."));
 
-    public ResponseEntity<List<AlunoResponseDTO>> listarTodos() {
-        List<Aluno> alunos = alunoRepository.findAll();
-        List<AlunoResponseDTO> dtos = alunos.stream()
-                .map(alunoMapper::toResponseDTO)
-                .toList();
-        return ResponseEntity.ok(dtos);
-    }
+        Pessoa pessoa = aluno.getPessoa();
 
-    public ResponseEntity<List<AlunoResponseDTO>> listarTodosCadastrados() {
-        List<Aluno> alunos = alunoRepository.findByCadastradoTrue();
-        List<AlunoResponseDTO> dtos = alunos.stream()
-                .map(alunoMapper::toResponseDTO)
-                .toList();
-        return ResponseEntity.ok(dtos);
-    }
+        // CORREÇÃO: Chamada mais simples e direta.
+        // Em vez de: pessoaMapper.updatePessoaFromPessoa(pessoaMapper.fromPessoa(dto), pessoa);
+        // Usamos:
+        pessoaMapper.updatePessoaFromDto(dto, pessoa);
 
-    public ResponseEntity<AlunoResponseDTO> atualizar(Long id, AlunoRequestDTO dto) {
-
-        Pessoa pessoa = pessoaRepository.findById(id)
-                .orElseThrow(AlunoNotFoundException::new);
-
-        Pessoa pesssoaAtualizada = pessoaMapper.fromPessoa(dto);
-
+        if (dto.getSenha() != null && !dto.getSenha().isBlank()) {
+            pessoa.setSenha(passwordEncoder.encode(dto.getSenha()));
+        }
         if (dto.getInstituicaoId() != null) {
-            pesssoaAtualizada.setInstituicao(buscarInstituicao(dto.getInstituicaoId()));
+            pessoa.setInstituicao(buscarInstituicao(dto.getInstituicaoId()));
         }
 
-        pessoaMapper.updatePessoaFromPessoa(pesssoaAtualizada, pessoa);
-
-        Aluno aluno = alunoRepository.findById(id)
-                .orElseThrow(AlunoNotFoundException::new);
         alunoMapper.updateAlunoFromDto(dto, aluno);
-
         if (dto.getDisciplinasPagasId() != null) {
             aluno.setDisciplinasPagas(buscarDisciplinas(dto.getDisciplinasPagasId()));
         }
-
         if (dto.getDisciplinasMonitoriaId() != null) {
             aluno.setDisciplinaMonitoria(buscarDisciplinas(dto.getDisciplinasMonitoriaId()));
         }
 
-        Pessoa pessoaSalva = pessoaRepository.save(pessoa);
-        aluno.setPessoa(pessoaSalva);
-
-        Aluno atualizado = alunoRepository.save(aluno);
-        return ResponseEntity.ok(alunoMapper.toResponseDTO(atualizado));
+        Aluno updatedAluno = alunoRepository.save(aluno);
+        return alunoMapper.toResponseDTO(updatedAluno);
     }
 
-    public ResponseEntity<Void> deletar(Long id) {
+    @Override
+    public void delete(Long id) {
         Aluno aluno = alunoRepository.findById(id)
-                .orElseThrow(AlunoNotFoundException::new);
+                .orElseThrow(() -> new AlunoNotFoundException("Aluno com ID " + id + " não encontrado para deleção."));
+
+        // Lógica explícita de soft delete
         aluno.setCadastrado(false);
-        aluno.setDisciplinaMonitoria(null);
-
         alunoRepository.save(aluno);
-
-        return ResponseEntity.noContent().build();
     }
 
-    public ResponseEntity<AlunoResponseDTO> associar(Long id, AlunoRequestDTO alunoRequestDTO){
-        Pessoa pessoa = pessoaRepository.findById(id).orElseThrow();
+    @Override
+    public AlunoResponseDTO associate(Long pessoaId, AlunoRequestDTO dto) {
+        Pessoa pessoa = pessoaRepository.findById(pessoaId)
+                .orElseThrow(() -> new PessoaNotFoundException("Pessoa com ID " + pessoaId + " não encontrada para associação."));
 
         Aluno aluno = new Aluno();
-
-        aluno.setDisciplinasPagas(buscarDisciplinas(alunoRequestDTO.getDisciplinasPagasId()));
-        aluno.setDisciplinaMonitoria(buscarDisciplinas(alunoRequestDTO.getDisciplinasMonitoriaId()));
         aluno.setPessoa(pessoa);
+        aluno.setDisciplinasPagas(buscarDisciplinas(dto.getDisciplinasPagasId()));
+        aluno.setDisciplinaMonitoria(buscarDisciplinas(dto.getDisciplinasMonitoriaId()));
 
-        Aluno salvo = alunoRepository.save(aluno);
-        return ResponseEntity.status(HttpStatus.CREATED).body(alunoMapper.toResponseDTO(salvo));
+        Aluno savedAluno = alunoRepository.save(aluno);
+        return alunoMapper.toResponseDTO(savedAluno);
     }
 
-    private Set<Disciplina> buscarDisciplinas(Set<Long> ids) {
-        if (ids == null || ids.isEmpty()) return Collections.emptySet();
-
-        // Encontra todos os IDs inexistentes
-        Set<Long> idsNaoEncontrados = ids.stream()
-                .filter(id -> disciplinaRepository.findById(id).isEmpty())
-                .collect(Collectors.toSet());
-
-        if (!idsNaoEncontrados.isEmpty()) {
-            throw new DisciplinaNotFoundException("IDs de disciplinas inválidos: " + idsNaoEncontrados);
+    private Set<Disciplina> buscarDisciplinas(Set<Long> disciplinaIds) {
+        if (disciplinaIds == null || disciplinaIds.isEmpty()) {
+            return Collections.emptySet();
         }
-
-        // Busca segura, já que todos existem
-        return ids.stream()
-                .map(id -> disciplinaRepository.findById(id).get())
-                .collect(Collectors.toSet());
-
+        // Otimizado: Uma única consulta ao banco para buscar todas as disciplinas.
+        List<Disciplina> disciplinas = disciplinaRepository.findAllById(disciplinaIds);
+        if (disciplinas.size() != disciplinaIds.size()) {
+            throw new DisciplinaNotFoundException("Uma ou mais IDs de disciplina não foram encontradas.");
+        }
+        return new HashSet<>(disciplinas);
     }
 
     private Instituicao buscarInstituicao(Long id) {
+        if (id == null) {
+            throw new InstituicaoNotFoundException("ID da instituição não pode ser nulo.");
+        }
         return instituicaoRepository.findById(id)
                 .orElseThrow(() -> new InstituicaoNotFoundException("Instituição com ID " + id + " não encontrada."));
     }
