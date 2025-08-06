@@ -6,107 +6,132 @@ import br.edu.ifpb.sgm.projeto_sgm.exception.*;
 import br.edu.ifpb.sgm.projeto_sgm.mapper.MonitoriaMapper;
 import br.edu.ifpb.sgm.projeto_sgm.model.*;
 import br.edu.ifpb.sgm.projeto_sgm.repository.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 @Transactional
-public class MonitoriaServiceImp {
+public class MonitoriaServiceImp implements MonitoriaService {
 
-    @Autowired
-    private MonitoriaRepository monitoriaRepository;
+    private final MonitoriaRepository monitoriaRepository;
+    private final DisciplinaRepository disciplinaRepository;
+    private final ProfessorRepository professorRepository;
+    private final ProcessoSeletivoRepository processoSeletivoRepository;
+    private final AlunoRepository alunoRepository;
+    private final MonitoriaMapper monitoriaMapper;
+    private final AtividadeRepository atividadeRepository;
+    private final MonitoriaInscricoesRepository monitoriaInscricoesRepository;
 
-    @Autowired
-    private DisciplinaRepository disciplinaRepository;
+    public MonitoriaServiceImp(MonitoriaRepository monitoriaRepository, DisciplinaRepository disciplinaRepository, ProfessorRepository professorRepository, ProcessoSeletivoRepository processoSeletivoRepository, AlunoRepository alunoRepository, MonitoriaMapper monitoriaMapper, AtividadeRepository atividadeRepository, MonitoriaInscricoesRepository monitoriaInscricoesRepository) {
+        this.monitoriaRepository = monitoriaRepository;
+        this.disciplinaRepository = disciplinaRepository;
+        this.professorRepository = professorRepository;
+        this.processoSeletivoRepository = processoSeletivoRepository;
+        this.alunoRepository = alunoRepository;
+        this.monitoriaMapper = monitoriaMapper;
+        this.atividadeRepository = atividadeRepository;
+        this.monitoriaInscricoesRepository = monitoriaInscricoesRepository;
+    }
 
-    @Autowired
-    private ProfessorRepository professorRepository;
-
-    @Autowired
-    private AlunoRepository alunoRepository;
-
-    @Autowired
-    private ProcessoSeletivoRepository processoSeletivoRepository;
-
-    @Autowired
-    private MonitoriaInscricoesRepository monitoriaInscricoesRepository;
-
-    @Autowired
-    private AtividadeRepository atividadeRepository;
-
-    @Autowired
-    private MonitoriaMapper monitoriaMapper;
-
-    public ResponseEntity<MonitoriaResponseDTO> salvar(MonitoriaRequestDTO dto) {
+    @Override
+    public MonitoriaResponseDTO save(MonitoriaRequestDTO dto) {
         Monitoria monitoria = monitoriaMapper.toEntity(dto);
 
+        // Associa as entidades principais
         monitoria.setDisciplina(buscarDisciplina(dto.getDisciplinaId()));
         monitoria.setProfessor(buscarProfessor(dto.getProfessorId()));
-        monitoria.setProcessoSeletivo(buscarProcesso(dto.getProcessoSeletivoId()));
-        monitoria.setInscricoes(buscarInscritosMonitoria(dto.getInscricoesId()));
+        monitoria.setProcessoSeletivo(buscarProcessoSeletivo(dto.getProcessoSeletivoId()));
 
-        Monitoria salva = monitoriaRepository.save(monitoria);
-        return ResponseEntity.status(HttpStatus.CREATED).body(monitoriaMapper.toResponseDTO(salva));
+        // Salva a monitoria primeiro para ter um ID
+        Monitoria monitoriaSalva = monitoriaRepository.save(monitoria);
+
+        // Gerencia as inscrições
+        gerenciarInscricoes(monitoriaSalva, dto.getInscricoesId());
+
+        return monitoriaMapper.toResponseDTO(monitoriaRepository.save(monitoriaSalva));
     }
 
-    public ResponseEntity<MonitoriaResponseDTO> buscarPorId(Long id) {
-        Monitoria monitoria = monitoriaRepository.findById(id)
-                .orElseThrow(() -> new MonitoriaNotFoundException("Monitoria com ID " + id + " não encontrada."));
-        return ResponseEntity.ok(monitoriaMapper.toResponseDTO(monitoria));
-    }
-
-    public ResponseEntity<List<MonitoriaResponseDTO>> listarTodos() {
-        List<Monitoria> monitorias = monitoriaRepository.findAll();
-        List<MonitoriaResponseDTO> dtos = monitorias.stream()
+    @Override
+    @Transactional(readOnly = true)
+    public List<MonitoriaResponseDTO> findAll() {
+        return monitoriaRepository.findAll().stream()
                 .map(monitoriaMapper::toResponseDTO)
-                .toList();
-        return ResponseEntity.ok(dtos);
+                .collect(Collectors.toList());
     }
 
-    public ResponseEntity<MonitoriaResponseDTO> atualizar(Long id, MonitoriaRequestDTO dto) {
-        Monitoria monitoria = monitoriaRepository.findById(id)
+    @Override
+    @Transactional(readOnly = true)
+    public MonitoriaResponseDTO findById(Long id) {
+        return monitoriaRepository.findById(id)
+                .map(monitoriaMapper::toResponseDTO)
                 .orElseThrow(() -> new MonitoriaNotFoundException("Monitoria com ID " + id + " não encontrada."));
+    }
+
+    @Override
+    public MonitoriaResponseDTO update(Long id, MonitoriaRequestDTO dto) {
+        Monitoria monitoria = monitoriaRepository.findById(id)
+                .orElseThrow(() -> new MonitoriaNotFoundException("Monitoria com ID " + id + " não encontrada para atualização."));
 
         monitoriaMapper.updateMonitoriaFromDto(dto, monitoria);
 
         if (dto.getDisciplinaId() != null) {
             monitoria.setDisciplina(buscarDisciplina(dto.getDisciplinaId()));
         }
-
         if (dto.getProfessorId() != null) {
             monitoria.setProfessor(buscarProfessor(dto.getProfessorId()));
         }
-
-        if (dto.getInscricoesId() != null) {
-            monitoria.setInscricoes(buscarInscritosMonitoria(dto.getInscricoesId()));
-        }
-
-
         if (dto.getProcessoSeletivoId() != null) {
-            monitoria.setProcessoSeletivo(buscarProcesso(dto.getProcessoSeletivoId()));
+            monitoria.setProcessoSeletivo(buscarProcessoSeletivo(dto.getProcessoSeletivoId()));
         }
 
+        // Gerencia as inscrições, limpando as antigas e adicionando as novas
+        if (dto.getInscricoesId() != null) {
+            gerenciarInscricoes(monitoria, dto.getInscricoesId());
+        }
 
-
-        Monitoria atualizada = monitoriaRepository.save(monitoria);
-        return ResponseEntity.ok(monitoriaMapper.toResponseDTO(atualizada));
+        Monitoria monitoriaAtualizada = monitoriaRepository.save(monitoria);
+        return monitoriaMapper.toResponseDTO(monitoriaAtualizada);
     }
 
-    public ResponseEntity<Void> deletar(Long id) {
-        Monitoria monitoria = monitoriaRepository.findById(id)
-                .orElseThrow(() -> new MonitoriaNotFoundException("Monitoria com ID " + id + " não encontrada."));
-        monitoriaRepository.delete(monitoria);
-        return ResponseEntity.noContent().build();
+    @Override
+    public void delete(Long id) {
+        if (!monitoriaRepository.existsById(id)) {
+            throw new MonitoriaNotFoundException("Monitoria com ID " + id + " não encontrada para deleção.");
+        }
+
+        atividadeRepository.deleteAllByMonitoriaId(id);
+        monitoriaInscricoesRepository.deleteAllByMonitoriaId(id);
+
+        monitoriaRepository.deleteById(id);
     }
 
-    // Métodos auxiliares
+    // --- MÉTODOS AUXILIARES ---
+
+    private void gerenciarInscricoes(Monitoria monitoria, List<Long> alunoIds) {
+        // Limpa as inscrições antigas. Graças ao 'orphanRemoval=true' na entidade Monitoria,
+        // isso deletará as entradas correspondentes na tabela 'monitoria_inscritos'.
+        monitoria.getInscricoes().clear();
+
+        if (alunoIds != null && !alunoIds.isEmpty()) {
+            // Busca todos os alunos em uma única query (otimizado)
+            List<Aluno> alunos = alunoRepository.findAllById(alunoIds);
+            if (alunos.size() != alunoIds.size()) {
+                throw new AlunoNotFoundException("Um ou mais alunos para inscrição não foram encontrados.");
+            }
+
+            // Cria as novas entidades de inscrição
+            for (Aluno aluno : alunos) {
+                MonitoriaInscritos inscricao = new MonitoriaInscritos();
+                inscricao.setMonitoria(monitoria);
+                inscricao.setAluno(aluno);
+                inscricao.setSelecionado(false); // Padrão
+                monitoria.getInscricoes().add(inscricao);
+            }
+        }
+    }
 
     private Disciplina buscarDisciplina(Long id) {
         return disciplinaRepository.findById(id)
@@ -118,25 +143,8 @@ public class MonitoriaServiceImp {
                 .orElseThrow(() -> new ProfessorNotFoundException("Professor com ID " + id + " não encontrado."));
     }
 
-
-    private ProcessoSeletivo buscarProcesso(Long id) {
+    private ProcessoSeletivo buscarProcessoSeletivo(Long id) {
         return processoSeletivoRepository.findById(id)
-                .orElseThrow(() -> new ProcessoSeletivoNotFoundException("Processo seletivo com ID " + id + " não encontrado."));
-    }
-
-    private List<MonitoriaInscritos> buscarInscritosMonitoria(List<Long> ids) {
-        if (ids == null || ids.isEmpty()) return Collections.emptyList();
-
-        List<Long> idsNaoEncontrados = ids.stream()
-                .filter(id -> monitoriaInscricoesRepository.findById(id).isEmpty())
-                .toList();
-
-        if (!idsNaoEncontrados.isEmpty()) {
-            throw new MonitoriaNotFoundException("IDs de disciplinas inválidos: " + idsNaoEncontrados);
-        }
-
-        return ids.stream()
-                .map(id -> monitoriaInscricoesRepository.findById(id).get())
-                .collect(Collectors.toList());
+                .orElseThrow(() -> new ProcessoSeletivoNotFoundException("Processo Seletivo com ID " + id + " não encontrado."));
     }
 }

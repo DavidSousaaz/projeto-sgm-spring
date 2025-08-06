@@ -3,7 +3,6 @@ package br.edu.ifpb.sgm.projeto_sgm.service;
 import br.edu.ifpb.sgm.projeto_sgm.dto.ProcessoSeletivoRequestDTO;
 import br.edu.ifpb.sgm.projeto_sgm.dto.ProcessoSeletivoResponseDTO;
 import br.edu.ifpb.sgm.projeto_sgm.exception.InstituicaoNotFoundException;
-import br.edu.ifpb.sgm.projeto_sgm.exception.MonitoriaNotFoundException;
 import br.edu.ifpb.sgm.projeto_sgm.exception.ProcessoSeletivoNotFoundException;
 import br.edu.ifpb.sgm.projeto_sgm.mapper.ProcessoSeletivoMapper;
 import br.edu.ifpb.sgm.projeto_sgm.model.Instituicao;
@@ -12,96 +11,84 @@ import br.edu.ifpb.sgm.projeto_sgm.model.ProcessoSeletivo;
 import br.edu.ifpb.sgm.projeto_sgm.repository.InstituicaoRepository;
 import br.edu.ifpb.sgm.projeto_sgm.repository.MonitoriaRepository;
 import br.edu.ifpb.sgm.projeto_sgm.repository.ProcessoSeletivoRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 @Transactional
-public class ProcessoSeletivoServiceImp {
+public class ProcessoSeletivoServiceImp implements ProcessoSeletivoService {
 
-    @Autowired
-    private ProcessoSeletivoRepository processoSeletivoRepository;
+    private final ProcessoSeletivoRepository processoSeletivoRepository;
+    private final InstituicaoRepository instituicaoRepository;
+    private final ProcessoSeletivoMapper processoSeletivoMapper;
+    private final MonitoriaRepository monitoriaRepository;
+    private final MonitoriaService monitoriaService;
 
-    @Autowired
-    private InstituicaoRepository instituicaoRepository;
+    public ProcessoSeletivoServiceImp(ProcessoSeletivoRepository processoSeletivoRepository, InstituicaoRepository instituicaoRepository, ProcessoSeletivoMapper processoSeletivoMapper, MonitoriaRepository monitoriaRepository, MonitoriaService monitoriaService) {
+        this.processoSeletivoRepository = processoSeletivoRepository;
+        this.instituicaoRepository = instituicaoRepository;
+        this.processoSeletivoMapper = processoSeletivoMapper;
+        this.monitoriaRepository = monitoriaRepository;
+        this.monitoriaService = monitoriaService;
+    }
 
-    @Autowired
-    private MonitoriaRepository monitoriaRepository;
+    @Override
+    public ProcessoSeletivoResponseDTO save(ProcessoSeletivoRequestDTO dto) {
+        Instituicao instituicao = instituicaoRepository.findById(dto.getInstituicaoId())
+                .orElseThrow(() -> new InstituicaoNotFoundException("Instituição com ID " + dto.getInstituicaoId() + " não encontrada."));
 
-    @Autowired
-    private ProcessoSeletivoMapper processoSeletivoMapper;
-
-    public ResponseEntity<ProcessoSeletivoResponseDTO> salvar(ProcessoSeletivoRequestDTO dto) {
         ProcessoSeletivo processo = processoSeletivoMapper.toEntity(dto);
-        processo.setInstituicao(buscarInstituicao(dto.getInstituicaoId()));
+        processo.setInstituicao(instituicao);
 
-        ProcessoSeletivo salvo = processoSeletivoRepository.save(processo);
-        return ResponseEntity.status(HttpStatus.CREATED).body(processoSeletivoMapper.toResponseDTO(salvo));
+        ProcessoSeletivo savedProcesso = processoSeletivoRepository.save(processo);
+        return processoSeletivoMapper.toResponseDTO(savedProcesso);
     }
 
-    public ResponseEntity<ProcessoSeletivoResponseDTO> buscarPorId(Long id) {
-        ProcessoSeletivo processo = processoSeletivoRepository.findById(id)
-                .orElseThrow(() -> new ProcessoSeletivoNotFoundException("Processo seletivo com ID " + id + " não encontrado."));
-        return ResponseEntity.ok(processoSeletivoMapper.toResponseDTO(processo));
-    }
-
-    public ResponseEntity<List<ProcessoSeletivoResponseDTO>> listarTodos() {
-        List<ProcessoSeletivo> processos = processoSeletivoRepository.findAll();
-        List<ProcessoSeletivoResponseDTO> dtos = processos.stream()
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProcessoSeletivoResponseDTO> findAll() {
+        return processoSeletivoRepository.findAll().stream()
                 .map(processoSeletivoMapper::toResponseDTO)
-                .toList();
-        return ResponseEntity.ok(dtos);
+                .collect(Collectors.toList());
     }
 
-    public ResponseEntity<ProcessoSeletivoResponseDTO> atualizar(Long id, ProcessoSeletivoRequestDTO dto) {
+    @Override
+    @Transactional(readOnly = true)
+    public ProcessoSeletivoResponseDTO findById(Long id) {
+        return processoSeletivoRepository.findById(id)
+                .map(processoSeletivoMapper::toResponseDTO)
+                .orElseThrow(() -> new ProcessoSeletivoNotFoundException("Processo Seletivo com ID " + id + " não encontrado."));
+    }
+
+    @Override
+    public ProcessoSeletivoResponseDTO update(Long id, ProcessoSeletivoRequestDTO dto) {
         ProcessoSeletivo processo = processoSeletivoRepository.findById(id)
-                .orElseThrow(() -> new ProcessoSeletivoNotFoundException("Processo seletivo com ID " + id + " não encontrado."));
+                .orElseThrow(() -> new ProcessoSeletivoNotFoundException("Processo Seletivo com ID " + id + " não encontrado para atualização."));
 
         processoSeletivoMapper.updateProcessoSeletivoFromDto(dto, processo);
 
         if (dto.getInstituicaoId() != null) {
-            processo.setInstituicao(buscarInstituicao(dto.getInstituicaoId()));
+            Instituicao instituicao = instituicaoRepository.findById(dto.getInstituicaoId())
+                    .orElseThrow(() -> new InstituicaoNotFoundException("Instituição com ID " + dto.getInstituicaoId() + " não encontrada."));
+            processo.setInstituicao(instituicao);
         }
 
-
-        ProcessoSeletivo atualizado = processoSeletivoRepository.save(processo);
-        return ResponseEntity.ok(processoSeletivoMapper.toResponseDTO(atualizado));
+        ProcessoSeletivo updatedProcesso = processoSeletivoRepository.save(processo);
+        return processoSeletivoMapper.toResponseDTO(updatedProcesso);
     }
 
-    public ResponseEntity<Void> deletar(Long id) {
-        ProcessoSeletivo processo = processoSeletivoRepository.findById(id)
-                .orElseThrow(() -> new ProcessoSeletivoNotFoundException("Processo seletivo com ID " + id + " não encontrado."));
-        processoSeletivoRepository.delete(processo);
-        return ResponseEntity.noContent().build();
-    }
-
-    // Métodos auxiliares
-
-    private Instituicao buscarInstituicao(Long id) {
-        return instituicaoRepository.findById(id)
-                .orElseThrow(() -> new InstituicaoNotFoundException("Instituição com ID " + id + " não encontrada."));
-    }
-
-    private List<Monitoria> buscarMonitorias(List<Long> ids) {
-        if (ids == null || ids.isEmpty()) return Collections.emptyList();
-
-        List<Long> idsNaoEncontrados = ids.stream()
-                .filter(id -> monitoriaRepository.findById(id).isEmpty())
-                .toList();
-
-        if (!idsNaoEncontrados.isEmpty()) {
-            throw new MonitoriaNotFoundException("IDs de monitorias inválidos: " + idsNaoEncontrados);
+    @Override
+    public void delete(Long id) {
+        if (!processoSeletivoRepository.existsById(id)) {
+            throw new ProcessoSeletivoNotFoundException("Processo Seletivo com ID " + id + " não encontrado.");
         }
 
-        return ids.stream()
-                .map(id -> monitoriaRepository.findById(id).get())
-                .collect(Collectors.toList());
+        List<Monitoria> monitorias = monitoriaRepository.findAllByProcessoSeletivoId(id);
+        monitorias.forEach(m -> monitoriaService.delete(m.getId()));
+
+        processoSeletivoRepository.deleteById(id);
     }
 }

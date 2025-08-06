@@ -2,58 +2,67 @@ package br.edu.ifpb.sgm.projeto_sgm.service;
 
 import br.edu.ifpb.sgm.projeto_sgm.dto.RoleRequestDTO;
 import br.edu.ifpb.sgm.projeto_sgm.dto.RoleResponseDTO;
+import br.edu.ifpb.sgm.projeto_sgm.exception.RoleNotFoundException; // Agora existe
 import br.edu.ifpb.sgm.projeto_sgm.mapper.RoleMapper;
 import br.edu.ifpb.sgm.projeto_sgm.model.Role;
 import br.edu.ifpb.sgm.projeto_sgm.repository.RoleRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.net.URI;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
-public class RoleServiceImp {
+@Transactional
+public class RoleServiceImp implements RoleService {
 
-    @Autowired
-    private RoleRepository roleRepository;
+    private final RoleRepository roleRepository;
+    private final RoleMapper roleMapper;
 
-    @Autowired
-    private RoleMapper roleMapper;
+    public RoleServiceImp(RoleRepository roleRepository, RoleMapper roleMapper) {
+        this.roleRepository = roleRepository;
+        this.roleMapper = roleMapper;
+    }
 
-    public ResponseEntity<RoleResponseDTO> criar(RoleRequestDTO dto) {
+    @Override
+    public RoleResponseDTO save(RoleRequestDTO dto) {
         Role role = roleMapper.toEntity(dto);
-        Role salva = roleRepository.save(role);
-        RoleResponseDTO response = roleMapper.toDTO(salva);
-        return ResponseEntity.created(URI.create("/roles/" + response.getId())).body(response);
+        Role savedRole = roleRepository.save(role);
+        return roleMapper.toDTO(savedRole);
     }
 
-    public ResponseEntity<RoleResponseDTO> buscarPorId(Long id) {
+    @Override
+    @Transactional(readOnly = true)
+    public List<RoleResponseDTO> findAll() {
+        return roleRepository.findAll().stream()
+                // CORRIGIDO: Usando expressão lambda para garantir a compilação
+                .map(role -> roleMapper.toDTO(role))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public RoleResponseDTO findById(Long id) {
         return roleRepository.findById(id)
-                .map(role -> ResponseEntity.ok(roleMapper.toDTO(role)))
-                .orElse(ResponseEntity.notFound().build());
+                .map(roleMapper::toDTO)
+                .orElseThrow(() -> new RoleNotFoundException("Role com ID " + id + " não encontrada."));
     }
 
-    public ResponseEntity<List<RoleResponseDTO>> listarTodas() {
-        List<Role> roles = roleRepository.findAll();
-        return ResponseEntity.ok(roleMapper.toDTOList(roles));
+    @Override
+    public RoleResponseDTO update(Long id, RoleRequestDTO dto) {
+        Role role = roleRepository.findById(id)
+                .orElseThrow(() -> new RoleNotFoundException("Role com ID " + id + " não encontrada para atualização."));
+
+        roleMapper.updateEntityFromDTO(dto, role);
+        Role updatedRole = roleRepository.save(role);
+        return roleMapper.toDTO(updatedRole);
     }
 
-    public ResponseEntity<Void> deletar(Long id) {
+    @Override
+    public void delete(Long id) {
         if (!roleRepository.existsById(id)) {
-            return ResponseEntity.notFound().build();
+            throw new RoleNotFoundException("Role com ID " + id + " não encontrada para deleção.");
         }
         roleRepository.deleteById(id);
-        return ResponseEntity.noContent().build();
-    }
-
-    public ResponseEntity<RoleResponseDTO> atualizar(Long id, RoleRequestDTO dto) {
-        return roleRepository.findById(id)
-                .map(role -> {
-                    roleMapper.updateEntityFromDTO(dto, role);
-                    Role atualizado = roleRepository.save(role);
-                    return ResponseEntity.ok(roleMapper.toDTO(atualizado));
-                })
-                .orElse(ResponseEntity.notFound().build());
     }
 }

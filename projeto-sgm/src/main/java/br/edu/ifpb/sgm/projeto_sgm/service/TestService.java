@@ -1,172 +1,165 @@
 package br.edu.ifpb.sgm.projeto_sgm.service;
 
-import br.edu.ifpb.sgm.projeto_sgm.dto.AlunoRequestDTO;
-import br.edu.ifpb.sgm.projeto_sgm.dto.ProfessorRequestDTO;
-import br.edu.ifpb.sgm.projeto_sgm.model.*;
-import br.edu.ifpb.sgm.projeto_sgm.repository.*;
+import br.edu.ifpb.sgm.projeto_sgm.dto.*;
+import br.edu.ifpb.sgm.projeto_sgm.model.Instituicao;
+import br.edu.ifpb.sgm.projeto_sgm.model.Pessoa;
+import br.edu.ifpb.sgm.projeto_sgm.model.Role;
+import br.edu.ifpb.sgm.projeto_sgm.repository.PessoaRepository;
+import br.edu.ifpb.sgm.projeto_sgm.repository.RoleRepository;
+import br.edu.ifpb.sgm.projeto_sgm.util.Constants;
 import jakarta.annotation.PostConstruct;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-
-import static br.edu.ifpb.sgm.projeto_sgm.util.Constants.*;
 
 @Service
 public class TestService {
 
-    @Autowired
-    private AlunoRepository alunoRepository;
+    // Injeções necessárias
+    private final RoleRepository roleRepository;
+    private final PessoaRepository pessoaRepository; // Usado para criar usuários especiais
+    private final PasswordEncoder passwordEncoder;  // Usado para criar usuários especiais
+    private final InstituicaoService instituicaoService;
+    private final AlunoService alunoService;
+    private final ProfessorService professorService;
+    private final CursoService cursoService;
+    private final DisciplinaService disciplinaService;
+    private final ProcessoSeletivoService processoSeletivoService;
+    private final MonitoriaService monitoriaService;
+    private final AtividadeService atividadeService;
 
-    @Autowired
-    private AlunoServiceImp alunoServiceImp;
-
-    @Autowired
-    private PessoaRepository pessoaRepository;
-
-    @Autowired
-    private ProfessorRepository professorRepository;
-
-    @Autowired
-    private ProfessorServiceImp professorServiceImp;
-
-    @Autowired
-    private InstituicaoRepository instituicaoRepository;
-
-    @Autowired
-    private CursoRepository cursoRepository;
-
-    @Autowired
-    private DisciplinaRepository disciplinaRepository;
-
-    @Autowired
-    private ProcessoSeletivoRepository processoSeletivoRepository;
-
-    @Autowired
-    private MonitoriaRepository monitoriaRepository;
-
-    @Autowired
-    private AtividadeRepository atividadeRepository;
-
-    @Autowired
-    private RoleRepository roleRepository;
-
-    @Autowired
-    protected PasswordEncoder passwordEncoder;
+    public TestService(RoleRepository roleRepository, PessoaRepository pessoaRepository, PasswordEncoder passwordEncoder, InstituicaoService instituicaoService, AlunoService alunoService, ProfessorService professorService, CursoService cursoService, DisciplinaService disciplinaService, ProcessoSeletivoService processoSeletivoService, MonitoriaService monitoriaService, AtividadeService atividadeService) {
+        this.roleRepository = roleRepository;
+        this.pessoaRepository = pessoaRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.instituicaoService = instituicaoService;
+        this.alunoService = alunoService;
+        this.professorService = professorService;
+        this.cursoService = cursoService;
+        this.disciplinaService = disciplinaService;
+        this.processoSeletivoService = processoSeletivoService;
+        this.monitoriaService = monitoriaService;
+        this.atividadeService = atividadeService;
+    }
 
     @PostConstruct
     private void initRoles() {
-        if (roleRepository.findByRole("ROLE_" + ADMIN).isEmpty()) {
-            roleRepository.save(new Role(null, "ROLE_" + ADMIN));
+        if (roleRepository.findByRole("ROLE_" + Constants.ADMIN).isEmpty()) {
+            roleRepository.save(new Role(null, "ROLE_" + Constants.ADMIN));
         }
-        if (roleRepository.findByRole("ROLE_" + COORDENADOR).isEmpty()) {
-            roleRepository.save(new Role(null, "ROLE_" + COORDENADOR));
+        if (roleRepository.findByRole("ROLE_" + Constants.COORDENADOR).isEmpty()) {
+            roleRepository.save(new Role(null, "ROLE_" + Constants.COORDENADOR));
         }
-        if (roleRepository.findByRole("ROLE_" + DOCENTE).isEmpty()) {
-            roleRepository.save(new Role(null, "ROLE_" + DOCENTE));
+        if (roleRepository.findByRole("ROLE_" + Constants.DOCENTE).isEmpty()) {
+            roleRepository.save(new Role(null, "ROLE_" + Constants.DOCENTE));
         }
-        if (roleRepository.findByRole("ROLE_" + DISCENTE).isEmpty()) {
-            roleRepository.save(new Role(null, "ROLE_" + DISCENTE));
+        if (roleRepository.findByRole("ROLE_" + Constants.DISCENTE).isEmpty()) {
+            roleRepository.save(new Role(null, "ROLE_" + Constants.DISCENTE));
         }
-    }
-
-    private String encriptPassword(String senha) {
-        return passwordEncoder.encode(senha);
     }
 
     @Transactional
     public void insertTestData() {
-        Instituicao instituicao = new Instituicao();
-        instituicao.setNome("Instituição Teste");
-        instituicao.setCnpj("12.345.678/0001-99");
-        instituicao.setEmail("contato@instituicaoteste.com");
-        instituicaoRepository.save(instituicao);
+        if (instituicaoService.findAll().isEmpty()) {
+            // 1. Criar Instituição via serviço
+            InstituicaoRequestDTO instDto = new InstituicaoRequestDTO();
+            instDto.setNome("Instituição Teste");
+            instDto.setCnpj("12.345.678/0001-99");
+            instDto.setEmail("contato@instituicaoteste.com");
+            InstituicaoResponseDTO instituicao = instituicaoService.save(instDto);
 
+            // 2. Criar Admin DIRETAMENTE para garantir a Role
+            Pessoa admin = new Pessoa();
+            admin.setNome("Admin SGM");
+            admin.setCpf("000.000.000-00");
+            admin.setEmail("admin@sgm.com");
+            admin.setEmailAcademico("admin.academico@sgm.com");
+            admin.setMatricula("admin");
+            admin.setSenha(passwordEncoder.encode("admin123"));
+            admin.setInstituicao(new Instituicao(instituicao.getId(), null, null, null));
+            admin.setRoles(List.of(roleRepository.findByRole("ROLE_" + Constants.ADMIN).get()));
+            pessoaRepository.save(admin);
 
-        Pessoa admin = new Pessoa();
-        admin.setNome("Admin SGM");
-        admin.setCpf("000.000.000-00");
-        admin.setEmail("admin@sgm.com");
-        admin.setEmailAcademico("admin.academico@sgm.com");
-        admin.setMatricula("admin");
-        admin.setSenha(encriptPassword("admin123"));
-        admin.setInstituicao(instituicao);
-        admin.setRoles(List.of(roleRepository.findByRole("ROLE_" + ADMIN).orElseThrow(() -> new RuntimeException("Role ADMIN não encontrada!"))));
-        pessoaRepository.save(admin);
+            // 3. Criar Coordenador DIRETAMENTE para garantir a Role
+            Pessoa coordenador = new Pessoa();
+            coordenador.setNome("Coordenador Teste");
+            coordenador.setCpf("111.111.111-11");
+            coordenador.setEmail("coordenador@sgm.com");
+            coordenador.setEmailAcademico("coordenador.academico@sgm.com");
+            coordenador.setMatricula("coordenador");
+            coordenador.setSenha(passwordEncoder.encode("coord123"));
+            coordenador.setInstituicao(new Instituicao(instituicao.getId(), null, null, null));
+            coordenador.setRoles(List.of(roleRepository.findByRole("ROLE_" + Constants.COORDENADOR).get()));
+            pessoaRepository.save(coordenador);
 
-        Pessoa coordenador = new Pessoa();
-        coordenador.setNome("Coordenador Teste");
-        coordenador.setCpf("111.111.111-11");
-        coordenador.setEmail("coordenador@sgm.com");
-        coordenador.setEmailAcademico("coordenador.academico@sgm.com");
-        coordenador.setMatricula("coordenador");
-        coordenador.setSenha(encriptPassword("coord123"));
-        coordenador.setInstituicao(instituicao);
-        coordenador.setRoles(List.of(roleRepository.findByRole("ROLE_" + COORDENADOR).orElseThrow(() -> new RuntimeException("Role COORDENADOR não encontrada!"))));
-        pessoaRepository.save(coordenador);
+            // 4. Criar Curso via serviço
+            CursoRequestDTO cursoDto = new CursoRequestDTO();
+            cursoDto.setNome("Curso Teste");
+            cursoDto.setDuracao(4);
+            cursoDto.setInstituicaoId(instituicao.getId());
+            cursoDto.setNivelString("GRADUACAO");
+            CursoResponseDTO curso = cursoService.save(cursoDto);
 
-        Pessoa pessoaProfessor = new Pessoa();
-        pessoaProfessor.setNome("Professor Teste");
-        pessoaProfessor.setEmail("professor@instituicaoteste.com");
-        pessoaProfessor.setEmailAcademico("professorAcademico@instituicaoteste.com");
-        pessoaProfessor.setCpf("123.456.789-00");
-        pessoaProfessor.setMatricula("12374");
-        pessoaProfessor.setSenha(encriptPassword("senha"));
-        pessoaProfessor.setInstituicao(instituicao);
-        pessoaProfessor.setRoles(List.of(roleRepository.findByRole("ROLE_" + DOCENTE).orElseThrow(() -> new RuntimeException("Role DOCENTE não encontrada!"))));
-        Professor professor = new Professor();
-        professor.setPessoa(pessoaProfessor);
-        professorRepository.save(professor);
+            // 5. Criar Disciplina via serviço
+            DisciplinaRequestDTO disciplinaDto = new DisciplinaRequestDTO();
+            disciplinaDto.setNome("Disciplina Teste");
+            disciplinaDto.setCargaHoraria(60);
+            disciplinaDto.setCursoId(curso.getId());
+            DisciplinaResponseDTO disciplina = disciplinaService.save(disciplinaDto);
 
-        Curso curso = new Curso();
-        curso.setNome("Curso Teste");
-        curso.setDuracao(4);
-        curso.setInstituicao(instituicao);
-        curso.setNivel(NivelCurso.GRADUACAO);
-        cursoRepository.save(curso);
+            // 6. Criar Professor via serviço
+            ProfessorRequestDTO profDto = new ProfessorRequestDTO();
+            profDto.setNome("Professor Teste");
+            profDto.setEmail("professor@instituicaoteste.com");
+            profDto.setEmailAcademico("professorAcademico@instituicaoteste.com");
+            profDto.setCpf("123.456.789-00");
+            profDto.setMatricula("12374");
+            profDto.setSenha("senha");
+            profDto.setInstituicaoId(instituicao.getId());
+            profDto.setDisciplinasId(List.of(disciplina.getId()));
+            profDto.setCursosId(Set.of(curso.getId()));
+            ProfessorResponseDTO professor = professorService.save(profDto);
 
-        Disciplina disciplina = new Disciplina();
-        disciplina.setNome("Disciplina Teste");
-        disciplina.setCargaHoraria(60);
-        disciplina.setCurso(curso);
-        disciplinaRepository.save(disciplina);
+            // 7. Criar Aluno via serviço
+            AlunoRequestDTO alunoDTO = new AlunoRequestDTO();
+            alunoDTO.setNome("Joca Teste");
+            alunoDTO.setCpf("222.222.222-22");
+            alunoDTO.setEmail("joca@gmail.com");
+            alunoDTO.setEmailAcademico("joca.academico@gmail.com");
+            alunoDTO.setMatricula("123456");
+            alunoDTO.setSenha("senhaAluno");
+            alunoDTO.setInstituicaoId(instituicao.getId());
+            alunoService.save(alunoDTO);
 
-        AlunoRequestDTO alunoDTO = new AlunoRequestDTO();
-        alunoDTO.setNome("Joca Teste");
-        alunoDTO.setCpf("222.222.222-22");
-        alunoDTO.setEmail("joca@gmail.com");
-        alunoDTO.setEmailAcademico("joca.academico@gmail.com");
-        alunoDTO.setMatricula("123456");
-        alunoDTO.setSenha(encriptPassword("senhaAluno"));
-        alunoDTO.setInstituicaoId(instituicao.getId());
-        alunoServiceImp.salvar(alunoDTO);
+            // O resto segue o mesmo fluxo...
+            ProcessoSeletivoRequestDTO psDto = new ProcessoSeletivoRequestDTO();
+            psDto.setInstituicaoId(instituicao.getId());
+            psDto.setNumero("PS001");
+            psDto.setInicio(LocalDate.now());
+            psDto.setFim(LocalDate.now().plusMonths(2));
+            ProcessoSeletivoResponseDTO processoSeletivo = processoSeletivoService.save(psDto);
 
-        ProcessoSeletivo processoSeletivo = new ProcessoSeletivo();
-        processoSeletivo.setInstituicao(instituicao);
-        processoSeletivo.setNumero("PS001");
-        processoSeletivo.setInicio(LocalDate.now());
-        processoSeletivo.setFim(LocalDate.now().plusMonths(2));
-        processoSeletivoRepository.save(processoSeletivo);
+            MonitoriaRequestDTO monitoriaDto = new MonitoriaRequestDTO();
+            monitoriaDto.setDisciplinaId(disciplina.getId());
+            monitoriaDto.setProfessorId(professor.getId());
+            monitoriaDto.setNumeroVaga(10);
+            monitoriaDto.setNumeroVagaBolsa(2);
+            monitoriaDto.setCargaHoraria(4);
+            monitoriaDto.setProcessoSeletivoId(processoSeletivo.getId());
+            monitoriaDto.setInscricoesId(Collections.emptyList());
+            MonitoriaResponseDTO monitoria = monitoriaService.save(monitoriaDto);
 
-
-        Monitoria monitoria = new Monitoria();
-        monitoria.setDisciplina(disciplina);
-        monitoria.setProfessor(professor);
-        monitoria.setNumeroVaga(10);
-        monitoria.setNumeroVagaBolsa(2);
-        monitoria.setCargaHoraria(60);
-        monitoria.setProcessoSeletivo(processoSeletivo);
-        monitoriaRepository.save(monitoria);
-
-        Atividade atividade = new Atividade();
-        atividade.setDataHora(LocalDateTime.now());
-        atividade.setDescricao("atividade teste");
-        atividade.setMonitoria(monitoria);
-        atividadeRepository.save(atividade);
+            AtividadeRequestDTO atividadeDto = new AtividadeRequestDTO();
+            atividadeDto.setDataHora(LocalDateTime.now());
+            atividadeDto.setDescricao("Atividade teste de nivelamento");
+            atividadeDto.setMonitoriaId(monitoria.getId());
+            atividadeService.save(atividadeDto);
+        }
     }
 }
