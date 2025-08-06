@@ -2,7 +2,6 @@ package br.edu.ifpb.sgm.projeto_sgm.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
-
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -16,6 +15,8 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Table(name = "pessoa")
+@Inheritance(strategy = InheritanceType.JOINED) // Estratégia de herança
 public class Pessoa implements UserDetails {
 
     @Id
@@ -34,10 +35,11 @@ public class Pessoa implements UserDetails {
     @Column(nullable = false, unique = true)
     protected String emailAcademico;
 
-    @ManyToOne(optional = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "instituicao_id")
     protected Instituicao instituicao;
 
-    @Column(length = 12, nullable = false, unique = true)
+    @Column(length = 20, nullable = false, unique = true)
     protected String matricula;
 
     @ManyToMany(fetch = FetchType.EAGER)
@@ -48,26 +50,13 @@ public class Pessoa implements UserDetails {
     )
     private List<Role> roles = new ArrayList<>();
 
-    @OneToOne(mappedBy = "pessoa", cascade = CascadeType.ALL)
-    private Aluno aluno;
-
-    @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
-    @Column(nullable = false, length = 60)
+    @Column(nullable = false)
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String senha;
 
-    public void setSenha(String senha) {
-        this.senha = senha;
-    }
-
-    public String getSenha() {
-        throw new UnsupportedOperationException("Acesso ao campo senha não permitido.");
-    }
-
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return getRoles();
+        return this.roles;
     }
 
     @Override
@@ -77,16 +66,30 @@ public class Pessoa implements UserDetails {
 
     @Override
     public String getUsername() {
-        return matricula;
+        return this.matricula; // Usando matrícula como username
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return true;
     }
 
     public String[] arrayRoles() {
-        int size = roles.size();
-        String[] array = new String[size];
-
-        for(int i = 0; i < size; i++) {
-            array[i] = roles.get(i).getRole();
-        }
-        return array;
+        return roles.stream().map(Role::getAuthority).toArray(String[]::new);
     }
 }

@@ -24,10 +24,10 @@ public class Atividade {
     private LocalDateTime dataHora;
 
     @Lob
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String descricao;
 
-    @ManyToOne(optional = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "monitoria_id", nullable = false)
     private Monitoria monitoria;
 }

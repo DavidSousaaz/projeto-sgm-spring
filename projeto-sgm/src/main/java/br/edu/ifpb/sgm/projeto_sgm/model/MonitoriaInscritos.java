@@ -18,17 +18,16 @@ public class MonitoriaInscritos {
     @EmbeddedId
     private MonitoriaInscritoId id = new MonitoriaInscritoId();
 
-
-    @ManyToOne
-    @MapsId("monitoriaId")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @MapsId("monitoriaId") // Mapeia a parte 'monitoriaId' do EmbeddedId
     @JoinColumn(name = "monitoria_id")
     private Monitoria monitoria;
 
-    @ManyToOne
-    @MapsId("alunoId")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @MapsId("alunoId") // Mapeia a parte 'alunoId' do EmbeddedId
     @JoinColumn(name = "aluno_id")
     private Aluno aluno;
 
     @Column(nullable = false)
-    private boolean selecionado;
+    private boolean selecionado = false;
 }

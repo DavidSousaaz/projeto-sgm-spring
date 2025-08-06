@@ -11,6 +11,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Table(name = "disciplina")
 public class Disciplina {
 
     @Id
@@ -23,7 +24,7 @@ public class Disciplina {
     @Column(nullable = false)
     private int cargaHoraria;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "curso_id", nullable = false)
     private Curso curso;
 }

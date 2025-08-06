@@ -7,7 +7,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority;
 
-@SuppressWarnings("serial")
 @Entity
 @Getter
 @Setter
@@ -21,10 +20,10 @@ public class Role implements GrantedAuthority {
     private Long id;
 
     @Column(unique = true, nullable = false)
-    private String role;
+    private String role; // Ex: "ROLE_ADMIN", "ROLE_DISCENTE"
 
     @Override
     public String getAuthority() {
-        return role;
+        return this.role;
     }
 }

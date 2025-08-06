@@ -6,14 +6,12 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Entity
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Table(name = "instituicao")
 public class Instituicao {
 
     @Id
@@ -28,5 +26,4 @@ public class Instituicao {
 
     @Column(nullable = false, unique = true)
     private String email;
-
 }

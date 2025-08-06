@@ -14,15 +14,16 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Table(name = "monitoria")
 public class Monitoria {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(optional = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "disciplina_id")
-    private Disciplina disciplina; // Considere transformar em entidade se quiser relação forte
+    private Disciplina disciplina;
 
     @Column(nullable = false)
     private int numeroVaga;
@@ -33,15 +34,14 @@ public class Monitoria {
     @Column(nullable = false)
     private int cargaHoraria;
 
-    @ManyToOne(optional = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "professor_id")
     private Professor professor;
 
     @OneToMany(mappedBy = "monitoria", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<MonitoriaInscritos> inscricoes = new ArrayList<>();
 
-    @ManyToOne(optional = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "processoSeletivo_id")
     private ProcessoSeletivo processoSeletivo;
-
 }
