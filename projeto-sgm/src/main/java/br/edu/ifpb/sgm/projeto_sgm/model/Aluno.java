@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -18,7 +20,7 @@ import java.util.Set;
 public class Aluno {
 
     @Id
-    protected Long id;
+    private Long id;
 
     @OneToOne(cascade = CascadeType.ALL)
     @MapsId
@@ -27,9 +29,9 @@ public class Aluno {
 
     @ManyToMany
     @JoinTable(
-        name = "aluno_disciplinas_pagas",
-        joinColumns = @JoinColumn(name = "aluno_id"),
-        inverseJoinColumns = @JoinColumn(name = "disciplina_id")
+            name = "aluno_disciplinas_pagas",
+            joinColumns = @JoinColumn(name = "aluno_id"),
+            inverseJoinColumns = @JoinColumn(name = "disciplina_id")
     )
     private Set<Disciplina> disciplinasPagas = new HashSet<>();
 
@@ -41,6 +43,6 @@ public class Aluno {
     )
     private Set<Disciplina> disciplinaMonitoria = new HashSet<>();
 
-    @Column
-    private Boolean cadastrado = true;
+    @Column(nullable = false)
+    private boolean cadastrado = true;
 }

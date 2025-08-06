@@ -7,14 +7,13 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Table(name = "processo_seletivo")
 public class ProcessoSeletivo {
 
     @Id
@@ -30,8 +29,7 @@ public class ProcessoSeletivo {
     @Column(nullable = false, unique = true)
     private String numero;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "instiuicao_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "instituicao_id", nullable = false)
     private Instituicao instituicao;
-
 }
