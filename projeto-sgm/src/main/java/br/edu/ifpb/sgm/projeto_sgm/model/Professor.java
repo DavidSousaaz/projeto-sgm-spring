@@ -5,8 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.Where;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -27,7 +25,7 @@ public class Professor {
     @JoinColumn(name = "id")
     private Pessoa pessoa;
 
-    @ManyToMany(cascade = { CascadeType.PERSIST, CascadeType.MERGE })
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
             name = "professor_disciplinas",
             joinColumns = @JoinColumn(name = "professor_id"),

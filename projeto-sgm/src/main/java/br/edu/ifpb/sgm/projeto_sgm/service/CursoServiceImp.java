@@ -39,14 +39,14 @@ public class CursoServiceImp implements CursoService {
 
     @Override
     public CursoResponseDTO save(CursoRequestDTO dto) {
-        // Lógica de negócio: buscar a entidade Instituicao relacionada
+
         Instituicao instituicao = instituicaoRepository.findById(dto.getInstituicaoId())
                 .orElseThrow(() -> new InstituicaoNotFoundException("Instituição com ID " + dto.getInstituicaoId() + " não encontrada."));
 
         Curso curso = cursoMapper.toEntity(dto);
         curso.setInstituicao(instituicao);
 
-        // Lógica de negócio: converter a String de nível para o Enum correspondente
+
         try {
             curso.setNivel(NivelCurso.valueOf(dto.getNivelString().toUpperCase()));
         } catch (IllegalArgumentException e) {

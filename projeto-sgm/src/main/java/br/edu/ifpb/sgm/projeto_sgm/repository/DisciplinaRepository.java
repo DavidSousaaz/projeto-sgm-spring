@@ -12,8 +12,4 @@ public interface DisciplinaRepository extends JpaRepository<Disciplina, Long> {
     List<Disciplina> findAllByCursoId(Long cursoId);
 
 
-
-    // List<Disciplina> findByNomeContainingIgnoreCase(String nome);
-    //
-    // List<Disciplina> findByCursoId(Long cursoId);
 }

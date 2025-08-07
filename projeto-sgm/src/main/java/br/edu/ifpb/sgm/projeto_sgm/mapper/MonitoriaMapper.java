@@ -13,12 +13,12 @@ import java.util.stream.Collectors;
 
 @Mapper(
         componentModel = "spring",
-        // O MonitoriaInscritosMapper ainda é usado aqui, mas agora ele não depende mais de volta do MonitoriaMapper
+
         uses = {DisciplinaMapper.class, ProfessorMapper.class, ProcessoSeletivoMapper.class, MonitoriaInscritosMapper.class}
 )
 public abstract class MonitoriaMapper {
 
-    // A injeção @Lazy não é mais necessária, o ciclo foi quebrado
+
     @Autowired
     protected MonitoriaInscritosMapper monitoriaInscritosMapper;
 

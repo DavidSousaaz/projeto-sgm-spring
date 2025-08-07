@@ -21,10 +21,10 @@ import java.util.Set;
 @Service
 public class TestService {
 
-    // Injeções necessárias
+
     private final RoleRepository roleRepository;
-    private final PessoaRepository pessoaRepository; // Usado para criar usuários especiais
-    private final PasswordEncoder passwordEncoder;  // Usado para criar usuários especiais
+    private final PessoaRepository pessoaRepository;
+    private final PasswordEncoder passwordEncoder;
     private final InstituicaoService instituicaoService;
     private final AlunoService alunoService;
     private final ProfessorService professorService;
@@ -67,14 +67,14 @@ public class TestService {
     @Transactional
     public void insertTestData() {
         if (instituicaoService.findAll().isEmpty()) {
-            // 1. Criar Instituição via serviço
+
             InstituicaoRequestDTO instDto = new InstituicaoRequestDTO();
             instDto.setNome("Instituição Teste");
             instDto.setCnpj("12.345.678/0001-99");
             instDto.setEmail("contato@instituicaoteste.com");
             InstituicaoResponseDTO instituicao = instituicaoService.save(instDto);
 
-            // 2. Criar Admin DIRETAMENTE para garantir a Role
+
             Pessoa admin = new Pessoa();
             admin.setNome("Admin SGM");
             admin.setCpf("000.000.000-00");
@@ -86,7 +86,7 @@ public class TestService {
             admin.setRoles(List.of(roleRepository.findByRole("ROLE_" + Constants.ADMIN).get()));
             pessoaRepository.save(admin);
 
-            // 3. Criar Coordenador DIRETAMENTE para garantir a Role
+
             Pessoa coordenador = new Pessoa();
             coordenador.setNome("Coordenador Teste");
             coordenador.setCpf("111.111.111-11");
@@ -98,7 +98,7 @@ public class TestService {
             coordenador.setRoles(List.of(roleRepository.findByRole("ROLE_" + Constants.COORDENADOR).get()));
             pessoaRepository.save(coordenador);
 
-            // 4. Criar Curso via serviço
+
             CursoRequestDTO cursoDto = new CursoRequestDTO();
             cursoDto.setNome("Curso Teste");
             cursoDto.setDuracao(4);
@@ -106,14 +106,14 @@ public class TestService {
             cursoDto.setNivelString("GRADUACAO");
             CursoResponseDTO curso = cursoService.save(cursoDto);
 
-            // 5. Criar Disciplina via serviço
+
             DisciplinaRequestDTO disciplinaDto = new DisciplinaRequestDTO();
             disciplinaDto.setNome("Disciplina Teste");
             disciplinaDto.setCargaHoraria(60);
             disciplinaDto.setCursoId(curso.getId());
             DisciplinaResponseDTO disciplina = disciplinaService.save(disciplinaDto);
 
-            // 6. Criar Professor via serviço
+
             ProfessorRequestDTO profDto = new ProfessorRequestDTO();
             profDto.setNome("Professor Teste");
             profDto.setEmail("professor@instituicaoteste.com");

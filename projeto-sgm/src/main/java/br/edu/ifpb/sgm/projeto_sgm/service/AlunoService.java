@@ -8,10 +8,16 @@ import java.util.List;
 
 public interface AlunoService {
     AlunoResponseDTO save(AlunoRequestDTO dto);
+
     List<AlunoResponseDTO> findAll();
+
     AlunoResponseDTO findById(Long id);
+
     AlunoResponseDTO update(Long id, AlunoRequestDTO dto);
+
     void delete(Long id);
+
     AlunoResponseDTO associate(Long pessoaId, AlunoRequestDTO dto);
+
     List<MonitoriaInscritosResponseDTO> findInscricoesByAluno(Long alunoId);
 }

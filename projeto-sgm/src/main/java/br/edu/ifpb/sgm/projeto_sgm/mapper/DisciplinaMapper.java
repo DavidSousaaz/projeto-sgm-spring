@@ -4,8 +4,6 @@ import br.edu.ifpb.sgm.projeto_sgm.dto.DisciplinaRequestDTO;
 import br.edu.ifpb.sgm.projeto_sgm.dto.DisciplinaResponseDTO;
 import br.edu.ifpb.sgm.projeto_sgm.model.Disciplina;
 import org.mapstruct.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 
 @Mapper(componentModel = "spring",
         uses = {CursoMapper.class},

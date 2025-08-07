@@ -92,20 +92,19 @@ public class PessoaServiceImp implements PessoaService {
             throw new PessoaNotFoundException("Pessoa com ID " + id + " não encontrada para deleção.");
         }
 
-        // Tenta desativar o perfil de Aluno, se existir
+
         alunoRepository.findById(id).ifPresent(aluno -> {
             aluno.setCadastrado(false);
             alunoRepository.save(aluno);
         });
 
-        // Tenta desativar o perfil de Professor, se existir
+
         professorRepository.findById(id).ifPresent(professor -> {
             professor.setCadastrado(false);
             professorRepository.save(professor);
         });
 
-        // Só deleta a Pessoa fisicamente se ela NÃO tiver perfil de aluno ou professor
-        // Usamos existsById de novo para ter certeza
+
         if (!alunoRepository.existsById(id) && !professorRepository.existsById(id)) {
             pessoaRepository.deleteById(id);
         }

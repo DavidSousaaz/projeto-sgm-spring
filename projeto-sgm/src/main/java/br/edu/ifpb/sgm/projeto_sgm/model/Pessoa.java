@@ -2,7 +2,10 @@ package br.edu.ifpb.sgm.projeto_sgm.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -16,7 +19,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "pessoa")
-@Inheritance(strategy = InheritanceType.JOINED) // Estratégia de herança
+@Inheritance(strategy = InheritanceType.JOINED)
 public class Pessoa implements UserDetails {
 
     @Id
@@ -45,7 +48,7 @@ public class Pessoa implements UserDetails {
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "tb_pessoa_role",
-            joinColumns = @JoinColumn(name="pessoa_id"),
+            joinColumns = @JoinColumn(name = "pessoa_id"),
             inverseJoinColumns = @JoinColumn(name = "role_id")
     )
     private List<Role> roles = new ArrayList<>();
@@ -66,7 +69,7 @@ public class Pessoa implements UserDetails {
 
     @Override
     public String getUsername() {
-        return this.matricula; // Usando matrícula como username
+        return this.matricula;
     }
 
     @Override

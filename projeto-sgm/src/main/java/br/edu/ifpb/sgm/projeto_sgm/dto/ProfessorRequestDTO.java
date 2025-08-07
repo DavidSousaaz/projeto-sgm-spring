@@ -1,11 +1,12 @@
 package br.edu.ifpb.sgm.projeto_sgm.dto;
 
 import lombok.Data;
+
 import java.util.List;
 import java.util.Set;
 
 @Data
-public class ProfessorRequestDTO{
+public class ProfessorRequestDTO {
 
     protected String cpf;
     protected String nome;

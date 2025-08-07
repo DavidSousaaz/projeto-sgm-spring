@@ -41,7 +41,6 @@ public class AlunoController {
     public ResponseEntity<List<MonitoriaInscritosResponseDTO>> minhasInscricoes(
             @AuthenticationPrincipal Pessoa pessoaLogada
     ) {
-        // Este método precisará ser criado no AlunoService
         List<MonitoriaInscritosResponseDTO> inscricoes = alunoService.findInscricoesByAluno(pessoaLogada.getId());
         return ResponseEntity.ok(inscricoes);
     }

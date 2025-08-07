@@ -3,9 +3,10 @@ package br.edu.ifpb.sgm.projeto_sgm.mapper;
 import br.edu.ifpb.sgm.projeto_sgm.dto.InstituicaoRequestDTO;
 import br.edu.ifpb.sgm.projeto_sgm.dto.InstituicaoResponseDTO;
 import br.edu.ifpb.sgm.projeto_sgm.model.Instituicao;
-import org.mapstruct.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
+import org.mapstruct.BeanMapping;
+import org.mapstruct.Mapper;
+import org.mapstruct.MappingTarget;
+import org.mapstruct.NullValuePropertyMappingStrategy;
 
 @Mapper(componentModel = "spring",
         nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE

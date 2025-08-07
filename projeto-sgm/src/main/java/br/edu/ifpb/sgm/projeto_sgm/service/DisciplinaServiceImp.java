@@ -20,7 +20,7 @@ public class DisciplinaServiceImp implements DisciplinaService {
     private final DisciplinaRepository disciplinaRepository;
     private final CursoRepository cursoRepository;
     private final DisciplinaMapper disciplinaMapper;
-    private final MonitoriaRepository monitoriaRepository; // Adicione esta dependência
+    private final MonitoriaRepository monitoriaRepository;
     private final MonitoriaService monitoriaService;
     private final ProfessorRepository professorRepository;
     private final AlunoRepository alunoRepository;
@@ -37,7 +37,7 @@ public class DisciplinaServiceImp implements DisciplinaService {
 
     @Override
     public DisciplinaResponseDTO save(DisciplinaRequestDTO dto) {
-        // Lógica de negócio: buscar a entidade Curso relacionada
+
         Curso curso = cursoRepository.findById(dto.getCursoId())
                 .orElseThrow(() -> new CursoNotFoundException("Curso com ID " + dto.getCursoId() + " não encontrado."));
 

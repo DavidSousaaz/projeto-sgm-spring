@@ -9,9 +9,14 @@ import java.util.List;
 
 public interface AtividadeService {
     AtividadeResponseDTO save(AtividadeRequestDTO dto);
+
     List<AtividadeResponseDTO> findAll(Long monitoriaId);
+
     AtividadeResponseDTO findById(Long id);
+
     AtividadeResponseDTO update(Long id, AtividadeRequestDTO dto);
+
     void delete(Long id);
+
     AtividadeResponseDTO atualizarStatus(Long atividadeId, AtualizacaoStatusDTO statusDTO, Pessoa pessoaLogada);
 }

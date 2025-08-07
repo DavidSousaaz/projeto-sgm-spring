@@ -3,7 +3,10 @@ package br.edu.ifpb.sgm.projeto_sgm.service;
 import br.edu.ifpb.sgm.projeto_sgm.dto.AlunoRequestDTO;
 import br.edu.ifpb.sgm.projeto_sgm.dto.AlunoResponseDTO;
 import br.edu.ifpb.sgm.projeto_sgm.dto.MonitoriaInscritosResponseDTO;
-import br.edu.ifpb.sgm.projeto_sgm.exception.*;
+import br.edu.ifpb.sgm.projeto_sgm.exception.AlunoNotFoundException;
+import br.edu.ifpb.sgm.projeto_sgm.exception.DisciplinaNotFoundException;
+import br.edu.ifpb.sgm.projeto_sgm.exception.InstituicaoNotFoundException;
+import br.edu.ifpb.sgm.projeto_sgm.exception.PessoaNotFoundException;
 import br.edu.ifpb.sgm.projeto_sgm.mapper.AlunoMapper;
 import br.edu.ifpb.sgm.projeto_sgm.mapper.MonitoriaInscritosMapper;
 import br.edu.ifpb.sgm.projeto_sgm.mapper.PessoaMapper;
@@ -51,19 +54,19 @@ public class AlunoServiceImp implements AlunoService {
 
     @Override
     public AlunoResponseDTO save(AlunoRequestDTO dto) {
-        // 1. Mapeia e prepara a entidade Pessoa
+
         Pessoa pessoa = pessoaMapper.fromPessoa(dto);
         pessoa.setInstituicao(buscarInstituicao(dto.getInstituicaoId()));
-        pessoa.setSenha(passwordEncoder.encode(dto.getSenha())); // Criptografa a senha
+        pessoa.setSenha(passwordEncoder.encode(dto.getSenha()));
 
         Role alunoRole = roleRepository.findByRole("ROLE_" + Constants.DISCENTE)
                 .orElseThrow(() -> new RuntimeException("ERRO CRÍTICO: Role DISCENTE não encontrada no banco!"));
         pessoa.setRoles(List.of(alunoRole));
 
-        // 2. Salva a Pessoa para gerar o ID
+
         Pessoa pessoaSalva = pessoaRepository.save(pessoa);
 
-        // 3. Cria e salva o Aluno, associando à Pessoa
+
         Aluno aluno = new Aluno();
         aluno.setPessoa(pessoaSalva);
         aluno.setDisciplinasPagas(buscarDisciplinas(dto.getDisciplinasPagasId()));
@@ -76,7 +79,7 @@ public class AlunoServiceImp implements AlunoService {
     @Override
     @Transactional(readOnly = true)
     public List<AlunoResponseDTO> findAll() {
-        // Altere a chamada para o novo método
+
         return alunoRepository.findAllByCadastradoIsTrue().stream()
                 .map(alunoMapper::toResponseDTO)
                 .collect(Collectors.toList());
@@ -85,9 +88,9 @@ public class AlunoServiceImp implements AlunoService {
     @Override
     @Transactional(readOnly = true)
     public List<MonitoriaInscritosResponseDTO> findInscricoesByAluno(Long alunoId) {
-        return monitoriaInscricoesRepository.findAllByAlunoId(alunoId) // Busca no banco
+        return monitoriaInscricoesRepository.findAllByAlunoId(alunoId)
                 .stream()
-                .map(monitoriaInscritosMapper::toResponseDTO) // Converte cada inscrição para DTO
+                .map(monitoriaInscritosMapper::toResponseDTO)
                 .collect(Collectors.toList());
     }
 
@@ -106,9 +109,7 @@ public class AlunoServiceImp implements AlunoService {
 
         Pessoa pessoa = aluno.getPessoa();
 
-        // CORREÇÃO: Chamada mais simples e direta.
-        // Em vez de: pessoaMapper.updatePessoaFromPessoa(pessoaMapper.fromPessoa(dto), pessoa);
-        // Usamos:
+
         pessoaMapper.updatePessoaFromDto(dto, pessoa);
 
         if (dto.getSenha() != null && !dto.getSenha().isBlank()) {

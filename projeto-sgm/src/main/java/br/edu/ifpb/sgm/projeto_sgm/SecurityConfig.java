@@ -44,21 +44,21 @@ public class SecurityConfig {
         return authConfig.getAuthenticationManager();
     }
 
-    // Bean de configuração do CORS. Spring Security irá usá-lo automaticamente.
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // A URL exata do seu front-end
+
         configuration.setAllowedOrigins(List.of("http://localhost:5173"));
-        // Métodos permitidos
+
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-        // Cabeçalhos permitidos
+
         configuration.setAllowedHeaders(List.of("*"));
-        // Permitir credenciais (cookies, tokens de autorização)
+
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        // Aplica esta configuração para todas as rotas da sua API
+
         source.registerCorsConfiguration("/api/**", configuration);
         return source;
     }

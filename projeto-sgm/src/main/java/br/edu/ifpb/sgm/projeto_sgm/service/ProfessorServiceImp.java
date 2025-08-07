@@ -75,7 +75,7 @@ public class ProfessorServiceImp implements ProfessorService {
     @Override
     @Transactional(readOnly = true)
     public List<ProfessorResponseDTO> findAll() {
-        // Altere a chamada para o novo método
+
         return professorRepository.findAllByCadastradoIsTrue().stream()
                 .map(professorMapper::toResponseDTO)
                 .collect(Collectors.toList());
@@ -96,9 +96,7 @@ public class ProfessorServiceImp implements ProfessorService {
 
         Pessoa pessoa = professor.getPessoa();
 
-        // CORREÇÃO: Chamada mais simples e direta.
-        // Em vez de: pessoaMapper.updatePessoaFromPessoa(pessoaMapper.fromPessoa(dto), pessoa);
-        // Usamos:
+
         pessoaMapper.updatePessoaFromDto(dto, pessoa);
 
         if (dto.getSenha() != null && !dto.getSenha().isBlank()) {
@@ -125,7 +123,7 @@ public class ProfessorServiceImp implements ProfessorService {
         Professor professor = professorRepository.findById(id)
                 .orElseThrow(() -> new ProfessorNotFoundException("Professor com ID " + id + " não encontrado para deleção."));
 
-        // Lógica explícita de soft delete
+
         professor.setCadastrado(false);
         professorRepository.save(professor);
     }

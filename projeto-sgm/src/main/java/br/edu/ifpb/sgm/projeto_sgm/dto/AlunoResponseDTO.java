@@ -1,10 +1,11 @@
 package br.edu.ifpb.sgm.projeto_sgm.dto;
 
 import lombok.Data;
+
 import java.util.Set;
 
 @Data
-public class AlunoResponseDTO{
+public class AlunoResponseDTO {
 
     protected Long id;
     protected String cpf;

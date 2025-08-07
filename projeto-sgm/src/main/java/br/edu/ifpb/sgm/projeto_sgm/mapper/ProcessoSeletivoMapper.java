@@ -4,8 +4,6 @@ import br.edu.ifpb.sgm.projeto_sgm.dto.ProcessoSeletivoRequestDTO;
 import br.edu.ifpb.sgm.projeto_sgm.dto.ProcessoSeletivoResponseDTO;
 import br.edu.ifpb.sgm.projeto_sgm.model.ProcessoSeletivo;
 import org.mapstruct.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 
 @Mapper(componentModel = "spring",
         uses = {InstituicaoMapper.class},

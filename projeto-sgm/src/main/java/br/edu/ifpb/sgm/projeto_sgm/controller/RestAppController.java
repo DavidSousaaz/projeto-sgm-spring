@@ -7,7 +7,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 public class RestAppController {
 
-    protected boolean hasPermission(String... roles){
+    protected boolean hasPermission(String... roles) {
         Pessoa u = authenticatedUser();
         for (GrantedAuthority ga : u.getAuthorities()) {
             for (String role : roles) {
@@ -20,13 +20,13 @@ public class RestAppController {
 
     protected boolean isAuthenticationUser(Long id) {
         Pessoa u = authenticatedUser();
-        if(id.equals(u.getId()))
+        if (id.equals(u.getId()))
             return true;
         return false;
     }
 
     protected Pessoa authenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return (Pessoa)(authentication.getPrincipal());
+        return (Pessoa) (authentication.getPrincipal());
     }
 }

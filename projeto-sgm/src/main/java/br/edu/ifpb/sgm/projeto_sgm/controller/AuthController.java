@@ -4,8 +4,7 @@ import br.edu.ifpb.sgm.projeto_sgm.dto.LoginResquestDTO;
 import br.edu.ifpb.sgm.projeto_sgm.dto.PessoaResponseDTO;
 import br.edu.ifpb.sgm.projeto_sgm.dto.TokenDTO;
 import br.edu.ifpb.sgm.projeto_sgm.service.JwtService;
-import br.edu.ifpb.sgm.projeto_sgm.service.PessoaService; // Injetando a interface
-import jakarta.servlet.http.HttpServletRequest;
+import br.edu.ifpb.sgm.projeto_sgm.service.PessoaService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -21,13 +20,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
-    private final PessoaService pessoaService; // Alterado para a interface
+    private final PessoaService pessoaService;
     private final JwtService jwtService;
 
     public AuthController(
             AuthenticationManager authenticationManager,
             JwtService jwtService,
-            PessoaService pessoaService) { // Alterado para a interface
+            PessoaService pessoaService) {
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
         this.pessoaService = pessoaService;

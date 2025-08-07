@@ -9,10 +9,16 @@ import java.util.List;
 
 public interface ProfessorService {
     ProfessorResponseDTO save(ProfessorRequestDTO dto);
+
     List<ProfessorResponseDTO> findAll();
+
     ProfessorResponseDTO findById(Long id);
+
     ProfessorResponseDTO update(Long id, ProfessorRequestDTO dto);
+
     void delete(Long id);
+
     List<MonitoriaResponseDTO> findMonitoriasByProfessor(Pessoa pessoaLogada);
+
     ProfessorResponseDTO associate(Long pessoaId, ProfessorRequestDTO dto);
 }

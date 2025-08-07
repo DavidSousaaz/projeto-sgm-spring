@@ -19,7 +19,7 @@ public class InstituicaoServiceImp implements InstituicaoService {
     private final InstituicaoRepository instituicaoRepository;
     private final InstituicaoMapper instituicaoMapper;
 
-    // Injeção de dependências via construtor (melhor prática)
+
     public InstituicaoServiceImp(InstituicaoRepository instituicaoRepository, InstituicaoMapper instituicaoMapper) {
         this.instituicaoRepository = instituicaoRepository;
         this.instituicaoMapper = instituicaoMapper;

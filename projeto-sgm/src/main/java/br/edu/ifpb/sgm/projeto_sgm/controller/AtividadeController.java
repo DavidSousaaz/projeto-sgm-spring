@@ -54,7 +54,7 @@ public class AtividadeController {
     public ResponseEntity<AtividadeResponseDTO> atualizarStatus(
             @PathVariable Long id,
             @RequestBody AtualizacaoStatusDTO statusDTO,
-            @AuthenticationPrincipal Pessoa pessoaLogada // Pega o usuário da sessão
+            @AuthenticationPrincipal Pessoa pessoaLogada
     ) {
         return ResponseEntity.ok(atividadeService.atualizarStatus(id, statusDTO, pessoaLogada));
     }

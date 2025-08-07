@@ -1,10 +1,6 @@
 package br.edu.ifpb.sgm.projeto_sgm.service;
 
-import br.edu.ifpb.sgm.projeto_sgm.dto.InscricaoRequestDTO;
-import br.edu.ifpb.sgm.projeto_sgm.dto.MonitoriaInscritosResponseDTO;
-import br.edu.ifpb.sgm.projeto_sgm.dto.MonitoriaRequestDTO;
-import br.edu.ifpb.sgm.projeto_sgm.dto.MonitoriaResponseDTO;
-import br.edu.ifpb.sgm.projeto_sgm.dto.DashboardMonitoriaDTO;
+import br.edu.ifpb.sgm.projeto_sgm.dto.*;
 import br.edu.ifpb.sgm.projeto_sgm.exception.*;
 import br.edu.ifpb.sgm.projeto_sgm.mapper.MonitoriaInscritosMapper;
 import br.edu.ifpb.sgm.projeto_sgm.mapper.MonitoriaMapper;
@@ -162,16 +158,15 @@ public class MonitoriaServiceImp implements MonitoriaService {
 
         Monitoria monitoria = inscricao.getMonitoria();
 
-        // Lógica de negócio: verifica se ainda há vagas com bolsa para preencher
+
         long selecionadosBolsa = monitoria.getInscricoes().stream()
                 .filter(i -> i.isSelecionado() && i.getTipoVaga() == TipoVaga.BOLSA)
                 .count();
 
-        // Se o aluno se inscreveu para bolsa, mas as vagas de bolsa já foram preenchidas,
-        // ele é selecionado como voluntário.
+
         if (inscricao.getTipoVaga() == TipoVaga.BOLSA && selecionadosBolsa >= monitoria.getNumeroVagaBolsa()) {
             inscricao.setTipoVaga(TipoVaga.VOLUNTARIA);
-            // Poderia adicionar uma notificação/lógica extra aqui
+
         }
 
         inscricao.setSelecionado(true);

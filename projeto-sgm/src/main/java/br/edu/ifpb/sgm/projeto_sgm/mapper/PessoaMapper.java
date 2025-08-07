@@ -5,16 +5,12 @@ import br.edu.ifpb.sgm.projeto_sgm.dto.PessoaRequestDTO;
 import br.edu.ifpb.sgm.projeto_sgm.dto.PessoaResponseDTO;
 import br.edu.ifpb.sgm.projeto_sgm.dto.ProfessorRequestDTO;
 import br.edu.ifpb.sgm.projeto_sgm.model.Pessoa;
-import org.mapstruct.BeanMapping;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
-import org.mapstruct.NullValuePropertyMappingStrategy;
+import org.mapstruct.*;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @Mapper(
         componentModel = "spring",
-        uses = { InstituicaoMapper.class, RoleMapper.class }
+        uses = {InstituicaoMapper.class, RoleMapper.class}
 )
 public abstract class PessoaMapper {
 
@@ -51,7 +47,6 @@ public abstract class PessoaMapper {
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     public abstract void updatePessoaFromDto(PessoaRequestDTO pessoaRequestDTO, @MappingTarget Pessoa entity);
 
-    // --- ADIÇÃO DOS MÉTODOS CORRIGIDOS AQUI ---
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "instituicao", ignore = true)
@@ -70,7 +65,6 @@ public abstract class PessoaMapper {
     public abstract void updatePessoaFromDto(ProfessorRequestDTO professorRequestDTO, @MappingTarget Pessoa entity);
 
 
-    // --- MÉTODO MANUAL (JÁ ESTAVA CORRETO) ---
     public PessoaResponseDTO toResponseDTO(Pessoa pessoa) {
         if (pessoa == null) return null;
         PessoaResponseDTO dto = new PessoaResponseDTO();

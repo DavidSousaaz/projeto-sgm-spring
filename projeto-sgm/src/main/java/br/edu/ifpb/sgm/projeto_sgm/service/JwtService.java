@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
-
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
@@ -26,7 +25,7 @@ public class JwtService {
     private int jwtExpirationMs;
 
     public String generateToken(Authentication authentication) {
-        String[] roles = ((Pessoa)(authentication.getPrincipal())).arrayRoles();
+        String[] roles = ((Pessoa) (authentication.getPrincipal())).arrayRoles();
 
         Map<String, String[]> claims = new HashMap<>();
         claims.put("roles", roles);

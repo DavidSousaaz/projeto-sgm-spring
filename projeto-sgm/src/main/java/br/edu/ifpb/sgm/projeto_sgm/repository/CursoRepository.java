@@ -11,9 +11,5 @@ public interface CursoRepository extends JpaRepository<Curso, Long> {
 
     List<Curso> findAllByInstituicaoId(Long instituicaoId);
 
-    // Exemplos de métodos de consulta:
-    //
-    // List<Curso> findByNomeContainingIgnoreCase(String nome);
-    //
-    // List<Curso> findByInstituicaoId(Long instituicaoId);
+
 }

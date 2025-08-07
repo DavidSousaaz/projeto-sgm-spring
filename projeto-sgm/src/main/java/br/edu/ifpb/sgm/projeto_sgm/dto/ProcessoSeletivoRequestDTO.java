@@ -3,7 +3,6 @@ package br.edu.ifpb.sgm.projeto_sgm.dto;
 import lombok.Data;
 
 import java.time.LocalDate;
-import java.util.List;
 
 @Data
 public class ProcessoSeletivoRequestDTO {

@@ -2,7 +2,7 @@ package br.edu.ifpb.sgm.projeto_sgm.service;
 
 import br.edu.ifpb.sgm.projeto_sgm.dto.RoleRequestDTO;
 import br.edu.ifpb.sgm.projeto_sgm.dto.RoleResponseDTO;
-import br.edu.ifpb.sgm.projeto_sgm.exception.RoleNotFoundException; // Agora existe
+import br.edu.ifpb.sgm.projeto_sgm.exception.RoleNotFoundException;
 import br.edu.ifpb.sgm.projeto_sgm.mapper.RoleMapper;
 import br.edu.ifpb.sgm.projeto_sgm.model.Role;
 import br.edu.ifpb.sgm.projeto_sgm.repository.RoleRepository;
@@ -35,7 +35,7 @@ public class RoleServiceImp implements RoleService {
     @Transactional(readOnly = true)
     public List<RoleResponseDTO> findAll() {
         return roleRepository.findAll().stream()
-                // CORRIGIDO: Usando expressão lambda para garantir a compilação
+
                 .map(role -> roleMapper.toDTO(role))
                 .collect(Collectors.toList());
     }

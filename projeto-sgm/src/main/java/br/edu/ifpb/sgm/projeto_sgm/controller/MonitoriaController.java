@@ -65,7 +65,7 @@ public class MonitoriaController {
     @PostMapping("/{id}/inscricoes")
     public ResponseEntity<MonitoriaInscritosResponseDTO> inscrever(
             @PathVariable Long id,
-            @AuthenticationPrincipal Pessoa pessoa, // O Spring injeta o usuário logado aqui
+            @AuthenticationPrincipal Pessoa pessoa,
             @RequestBody InscricaoRequestDTO inscricaoDTO
     ) {
         MonitoriaInscritosResponseDTO inscricao = monitoriaService.realizarInscricao(id, pessoa, inscricaoDTO);

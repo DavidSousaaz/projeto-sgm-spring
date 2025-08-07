@@ -12,7 +12,7 @@ import org.springframework.security.core.GrantedAuthority;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name="tb_role")
+@Table(name = "tb_role")
 public class Role implements GrantedAuthority {
 
     @Id
@@ -20,7 +20,7 @@ public class Role implements GrantedAuthority {
     private Long id;
 
     @Column(unique = true, nullable = false)
-    private String role; // Ex: "ROLE_ADMIN", "ROLE_DISCENTE"
+    private String role;
 
     @Override
     public String getAuthority() {

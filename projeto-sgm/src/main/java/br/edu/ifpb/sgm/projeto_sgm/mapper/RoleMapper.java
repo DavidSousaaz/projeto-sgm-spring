@@ -5,7 +5,6 @@ import br.edu.ifpb.sgm.projeto_sgm.dto.RoleResponseDTO;
 import br.edu.ifpb.sgm.projeto_sgm.model.Role;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingTarget;
-import org.mapstruct.factory.Mappers;
 
 import java.util.List;
 
