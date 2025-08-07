@@ -1,10 +1,13 @@
 package br.edu.ifpb.sgm.projeto_sgm.controller;
 
+import br.edu.ifpb.sgm.projeto_sgm.dto.MonitoriaResponseDTO;
 import br.edu.ifpb.sgm.projeto_sgm.dto.ProfessorRequestDTO;
 import br.edu.ifpb.sgm.projeto_sgm.dto.ProfessorResponseDTO;
+import br.edu.ifpb.sgm.projeto_sgm.model.Pessoa;
 import br.edu.ifpb.sgm.projeto_sgm.service.ProfessorService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -32,6 +35,13 @@ public class ProfessorController {
     @GetMapping
     public ResponseEntity<List<ProfessorResponseDTO>> findAll() {
         return ResponseEntity.ok(professorService.findAll());
+    }
+
+    @GetMapping("/me/monitorias")
+    public ResponseEntity<List<MonitoriaResponseDTO>> getMinhasMonitorias(
+            @AuthenticationPrincipal Pessoa pessoaLogada
+    ) {
+        return ResponseEntity.ok(professorService.findMonitoriasByProfessor(pessoaLogada));
     }
 
     @PutMapping("/{id}")

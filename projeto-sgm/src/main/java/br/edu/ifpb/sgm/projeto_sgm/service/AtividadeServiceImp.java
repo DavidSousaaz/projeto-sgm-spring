@@ -2,13 +2,17 @@ package br.edu.ifpb.sgm.projeto_sgm.service;
 
 import br.edu.ifpb.sgm.projeto_sgm.dto.AtividadeRequestDTO;
 import br.edu.ifpb.sgm.projeto_sgm.dto.AtividadeResponseDTO;
+import br.edu.ifpb.sgm.projeto_sgm.dto.AtualizacaoStatusDTO;
 import br.edu.ifpb.sgm.projeto_sgm.exception.AtividadeNotFoundException;
 import br.edu.ifpb.sgm.projeto_sgm.exception.MonitoriaNotFoundException;
 import br.edu.ifpb.sgm.projeto_sgm.mapper.AtividadeMapper;
 import br.edu.ifpb.sgm.projeto_sgm.model.Atividade;
 import br.edu.ifpb.sgm.projeto_sgm.model.Monitoria;
+import br.edu.ifpb.sgm.projeto_sgm.model.Pessoa;
 import br.edu.ifpb.sgm.projeto_sgm.repository.AtividadeRepository;
 import br.edu.ifpb.sgm.projeto_sgm.repository.MonitoriaRepository;
+import br.edu.ifpb.sgm.projeto_sgm.repository.ProfessorRepository;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,11 +27,13 @@ public class AtividadeServiceImp implements AtividadeService {
     private final AtividadeRepository atividadeRepository;
     private final MonitoriaRepository monitoriaRepository;
     private final AtividadeMapper atividadeMapper;
+    private final ProfessorRepository professorRepository;
 
-    public AtividadeServiceImp(AtividadeRepository atividadeRepository, MonitoriaRepository monitoriaRepository, AtividadeMapper atividadeMapper) {
+    public AtividadeServiceImp(AtividadeRepository atividadeRepository, MonitoriaRepository monitoriaRepository, AtividadeMapper atividadeMapper, ProfessorRepository professorRepository) {
         this.atividadeRepository = atividadeRepository;
         this.monitoriaRepository = monitoriaRepository;
         this.atividadeMapper = atividadeMapper;
+        this.professorRepository = professorRepository;
     }
 
     @Override
@@ -94,5 +100,32 @@ public class AtividadeServiceImp implements AtividadeService {
             throw new AtividadeNotFoundException("Atividade com ID " + id + " não encontrada para deleção.");
         }
         atividadeRepository.deleteById(id);
+    }
+
+    @Override
+    public AtividadeResponseDTO atualizarStatus(Long atividadeId, AtualizacaoStatusDTO statusDTO, Pessoa pessoaLogada) {
+        Atividade atividade = atividadeRepository.findById(atividadeId)
+                .orElseThrow(() -> new AtividadeNotFoundException("Atividade com ID " + atividadeId + " não encontrada."));
+
+        // --- LÓGICA DE PERMISSÃO (IMPLEMENTAÇÃO DO TODO) ---
+
+        // 1. Garante que o usuário logado tem um perfil de professor
+        professorRepository.findById(pessoaLogada.getId())
+                .orElseThrow(() -> new AccessDeniedException("Usuário não tem perfil de professor."));
+
+        // 2. Pega o ID do professor responsável pela monitoria da atividade
+        Long idProfessorResponsavel = atividade.getMonitoria().getProfessor().getId();
+
+        // 3. Compara o ID do professor responsável com o ID do usuário logado
+        if (!idProfessorResponsavel.equals(pessoaLogada.getId())) {
+            // Se não forem iguais, lança um erro de acesso negado
+            throw new AccessDeniedException("Acesso negado. Você não é o professor responsável por esta monitoria.");
+        }
+        // --- FIM DA LÓGICA DE PERMISSÃO ---
+
+        atividade.setStatus(statusDTO.getStatus());
+        Atividade atividadeSalva = atividadeRepository.save(atividade);
+
+        return atividadeMapper.toResponseDTO(atividadeSalva);
     }
 }

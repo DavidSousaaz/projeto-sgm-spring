@@ -30,4 +30,8 @@ public class Atividade {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "monitoria_id", nullable = false)
     private Monitoria monitoria;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private StatusAtividade status = StatusAtividade.PENDENTE;
 }

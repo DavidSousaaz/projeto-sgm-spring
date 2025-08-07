@@ -2,9 +2,12 @@ package br.edu.ifpb.sgm.projeto_sgm.controller;
 
 import br.edu.ifpb.sgm.projeto_sgm.dto.AtividadeRequestDTO;
 import br.edu.ifpb.sgm.projeto_sgm.dto.AtividadeResponseDTO;
+import br.edu.ifpb.sgm.projeto_sgm.dto.AtualizacaoStatusDTO;
+import br.edu.ifpb.sgm.projeto_sgm.model.Pessoa;
 import br.edu.ifpb.sgm.projeto_sgm.service.AtividadeService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -46,4 +49,14 @@ public class AtividadeController {
         atividadeService.delete(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<AtividadeResponseDTO> atualizarStatus(
+            @PathVariable Long id,
+            @RequestBody AtualizacaoStatusDTO statusDTO,
+            @AuthenticationPrincipal Pessoa pessoaLogada // Pega o usuário da sessão
+    ) {
+        return ResponseEntity.ok(atividadeService.atualizarStatus(id, statusDTO, pessoaLogada));
+    }
+
 }

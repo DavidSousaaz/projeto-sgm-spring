@@ -1,8 +1,10 @@
 package br.edu.ifpb.sgm.projeto_sgm.service;
 
+import br.edu.ifpb.sgm.projeto_sgm.dto.MonitoriaResponseDTO;
 import br.edu.ifpb.sgm.projeto_sgm.dto.ProfessorRequestDTO;
 import br.edu.ifpb.sgm.projeto_sgm.dto.ProfessorResponseDTO;
 import br.edu.ifpb.sgm.projeto_sgm.exception.*;
+import br.edu.ifpb.sgm.projeto_sgm.mapper.MonitoriaMapper;
 import br.edu.ifpb.sgm.projeto_sgm.mapper.PessoaMapper;
 import br.edu.ifpb.sgm.projeto_sgm.mapper.ProfessorMapper;
 import br.edu.ifpb.sgm.projeto_sgm.model.*;
@@ -32,7 +34,10 @@ public class ProfessorServiceImp implements ProfessorService {
     private final PessoaMapper pessoaMapper;
     private final PasswordEncoder passwordEncoder;
 
-    public ProfessorServiceImp(ProfessorRepository professorRepository, PessoaRepository pessoaRepository, RoleRepository roleRepository, DisciplinaRepository disciplinaRepository, CursoRepository cursoRepository, InstituicaoRepository instituicaoRepository, ProfessorMapper professorMapper, PessoaMapper pessoaMapper, PasswordEncoder passwordEncoder) {
+    private final MonitoriaRepository monitoriaRepository;
+    private final MonitoriaMapper monitoriaMapper;
+
+    public ProfessorServiceImp(ProfessorRepository professorRepository, PessoaRepository pessoaRepository, RoleRepository roleRepository, DisciplinaRepository disciplinaRepository, CursoRepository cursoRepository, InstituicaoRepository instituicaoRepository, ProfessorMapper professorMapper, PessoaMapper pessoaMapper, PasswordEncoder passwordEncoder, MonitoriaRepository monitoriaRepository, MonitoriaMapper monitoriaMapper) {
         this.professorRepository = professorRepository;
         this.pessoaRepository = pessoaRepository;
         this.roleRepository = roleRepository;
@@ -42,6 +47,8 @@ public class ProfessorServiceImp implements ProfessorService {
         this.professorMapper = professorMapper;
         this.pessoaMapper = pessoaMapper;
         this.passwordEncoder = passwordEncoder;
+        this.monitoriaRepository = monitoriaRepository;
+        this.monitoriaMapper = monitoriaMapper;
     }
 
     @Override
@@ -153,6 +160,15 @@ public class ProfessorServiceImp implements ProfessorService {
             throw new CursoNotFoundException("Um ou mais IDs de curso não foram encontrados.");
         }
         return new HashSet<>(cursos);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<MonitoriaResponseDTO> findMonitoriasByProfessor(Pessoa pessoaLogada) {
+        return monitoriaRepository.findAllByProfessorId(pessoaLogada.getId())
+                .stream()
+                .map(monitoriaMapper::toResponseDTO)
+                .collect(Collectors.toList());
     }
 
     private Instituicao buscarInstituicao(Long id) {

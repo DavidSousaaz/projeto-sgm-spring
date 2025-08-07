@@ -14,4 +14,6 @@ public interface MonitoriaRepository extends JpaRepository<Monitoria, Long> {
 
     List<Monitoria> findAllByProcessoSeletivoId(Long processoSeletivoId);
 
+    List<Monitoria> findAllByProfessorId(Long professorId);
+
 }

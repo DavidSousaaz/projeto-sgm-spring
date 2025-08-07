@@ -18,6 +18,7 @@ public interface AtividadeMapper {
     @Mapping(source = "monitoria", target = "monitoriaResponseDTO")
     AtividadeResponseDTO toResponseDTO(Atividade atividade);
 
+
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void updateAtividadeFromDto(AtividadeRequestDTO dto, @MappingTarget Atividade entity);
 }

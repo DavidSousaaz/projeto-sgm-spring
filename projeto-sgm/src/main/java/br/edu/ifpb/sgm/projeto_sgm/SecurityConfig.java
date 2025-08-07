@@ -96,6 +96,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/processos-seletivos/**").authenticated()
                         .requestMatchers("/api/processos-seletivos/**").hasAnyRole(ADMIN, COORDENADOR)
 
+                        .requestMatchers(HttpMethod.PATCH, "/api/atividades/{id}/status").hasAnyRole(ADMIN, COORDENADOR, DOCENTE)
                         .requestMatchers(HttpMethod.GET, "/api/atividades/**").authenticated()
                         .requestMatchers("/api/atividades/**").hasAnyRole(ADMIN, COORDENADOR, DOCENTE, DISCENTE)
                         .requestMatchers(HttpMethod.GET, "/api/professores/**").authenticated()
