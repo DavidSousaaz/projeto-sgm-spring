@@ -30,8 +30,10 @@ public class AtividadeController {
     }
 
     @GetMapping
-    public ResponseEntity<List<AtividadeResponseDTO>> findAll() {
-        return ResponseEntity.ok(atividadeService.findAll());
+    public ResponseEntity<List<AtividadeResponseDTO>> findAll(
+            @RequestParam(name = "monitoriaId", required = false) Long monitoriaId
+    ) {
+        return ResponseEntity.ok(atividadeService.findAll(monitoriaId));
     }
 
     @PutMapping("/{id}")

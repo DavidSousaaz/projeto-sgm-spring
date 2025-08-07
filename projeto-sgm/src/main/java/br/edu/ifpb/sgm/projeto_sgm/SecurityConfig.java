@@ -49,7 +49,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         // A URL exata do seu front-end
-        configuration.setAllowedOrigins(List.of("http://localhost:5174"));
+        configuration.setAllowedOrigins(List.of("http://localhost:5173"));
         // Métodos permitidos
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         // Cabeçalhos permitidos
@@ -81,8 +81,6 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/monitorias/**").hasAnyRole(ADMIN, COORDENADOR, DOCENTE, DISCENTE)
                         .requestMatchers("/api/monitorias/**").hasAnyRole(ADMIN, COORDENADOR, DOCENTE)
 
-                        // --- CORREÇÃO FINAL AQUI ---
-                        // Adicionando regra para que todos os perfis logados possam VER um aluno
                         .requestMatchers(HttpMethod.GET, "/api/alunos/{id}").hasAnyRole(ADMIN, COORDENADOR, DOCENTE, DISCENTE)
                         .requestMatchers(HttpMethod.GET, "/api/alunos/me/inscricoes").hasRole(DISCENTE)
                         .requestMatchers(HttpMethod.PUT, "/api/alunos/{id}").hasAnyRole(ADMIN, COORDENADOR, DISCENTE)

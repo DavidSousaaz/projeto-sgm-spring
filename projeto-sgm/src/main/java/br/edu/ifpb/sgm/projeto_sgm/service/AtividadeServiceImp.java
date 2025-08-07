@@ -12,6 +12,7 @@ import br.edu.ifpb.sgm.projeto_sgm.repository.MonitoriaRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime; // Import necessário
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -35,6 +36,13 @@ public class AtividadeServiceImp implements AtividadeService {
                 .orElseThrow(() -> new MonitoriaNotFoundException("Monitoria com ID " + dto.getMonitoriaId() + " não encontrada."));
 
         Atividade atividade = atividadeMapper.toEntity(dto);
+
+        // --- CORREÇÃO DEFINITIVA AQUI ---
+        // Se o front-end não enviar uma data, o back-end gera a data e hora atuais.
+        if (atividade.getDataHora() == null) {
+            atividade.setDataHora(LocalDateTime.now());
+        }
+
         atividade.setMonitoria(monitoria);
 
         Atividade savedAtividade = atividadeRepository.save(atividade);
@@ -43,8 +51,14 @@ public class AtividadeServiceImp implements AtividadeService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<AtividadeResponseDTO> findAll() {
-        return atividadeRepository.findAll().stream()
+    public List<AtividadeResponseDTO> findAll(Long monitoriaId) {
+        List<Atividade> atividades;
+        if (monitoriaId != null) {
+            atividades = atividadeRepository.findAllByMonitoriaId(monitoriaId);
+        } else {
+            atividades = atividadeRepository.findAll();
+        }
+        return atividades.stream()
                 .map(atividadeMapper::toResponseDTO)
                 .collect(Collectors.toList());
     }
