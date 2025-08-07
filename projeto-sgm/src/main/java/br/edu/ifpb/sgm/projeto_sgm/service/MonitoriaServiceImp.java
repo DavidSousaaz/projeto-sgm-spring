@@ -1,5 +1,6 @@
 package br.edu.ifpb.sgm.projeto_sgm.service;
 
+import br.edu.ifpb.sgm.projeto_sgm.dto.InscricaoRequestDTO;
 import br.edu.ifpb.sgm.projeto_sgm.dto.MonitoriaRequestDTO;
 import br.edu.ifpb.sgm.projeto_sgm.dto.MonitoriaResponseDTO;
 import br.edu.ifpb.sgm.projeto_sgm.exception.*;
@@ -8,6 +9,9 @@ import br.edu.ifpb.sgm.projeto_sgm.model.*;
 import br.edu.ifpb.sgm.projeto_sgm.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import br.edu.ifpb.sgm.projeto_sgm.dto.MonitoriaInscritosResponseDTO;
+import br.edu.ifpb.sgm.projeto_sgm.mapper.MonitoriaInscritosMapper;
+import br.edu.ifpb.sgm.projeto_sgm.model.Aluno;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -24,8 +28,11 @@ public class MonitoriaServiceImp implements MonitoriaService {
     private final MonitoriaMapper monitoriaMapper;
     private final AtividadeRepository atividadeRepository;
     private final MonitoriaInscricoesRepository monitoriaInscricoesRepository;
+    private final MonitoriaInscritosMapper monitoriaInscritosMapper;
 
-    public MonitoriaServiceImp(MonitoriaRepository monitoriaRepository, DisciplinaRepository disciplinaRepository, ProfessorRepository professorRepository, ProcessoSeletivoRepository processoSeletivoRepository, AlunoRepository alunoRepository, MonitoriaMapper monitoriaMapper, AtividadeRepository atividadeRepository, MonitoriaInscricoesRepository monitoriaInscricoesRepository) {
+
+
+    public MonitoriaServiceImp(MonitoriaRepository monitoriaRepository, DisciplinaRepository disciplinaRepository, ProfessorRepository professorRepository, ProcessoSeletivoRepository processoSeletivoRepository, AlunoRepository alunoRepository, MonitoriaMapper monitoriaMapper, AtividadeRepository atividadeRepository, MonitoriaInscricoesRepository monitoriaInscricoesRepository, MonitoriaInscritosMapper monitoriaInscritosMapper) {
         this.monitoriaRepository = monitoriaRepository;
         this.disciplinaRepository = disciplinaRepository;
         this.professorRepository = professorRepository;
@@ -34,6 +41,7 @@ public class MonitoriaServiceImp implements MonitoriaService {
         this.monitoriaMapper = monitoriaMapper;
         this.atividadeRepository = atividadeRepository;
         this.monitoriaInscricoesRepository = monitoriaInscricoesRepository;
+        this.monitoriaInscritosMapper = monitoriaInscritosMapper;
     }
 
     @Override
@@ -52,6 +60,43 @@ public class MonitoriaServiceImp implements MonitoriaService {
         gerenciarInscricoes(monitoriaSalva, dto.getInscricoesId());
 
         return monitoriaMapper.toResponseDTO(monitoriaRepository.save(monitoriaSalva));
+    }
+
+    @Override
+    public MonitoriaInscritosResponseDTO realizarInscricao(Long monitoriaId, Pessoa pessoaLogada, InscricaoRequestDTO inscricaoDTO) {
+        Aluno aluno = alunoRepository.findById(pessoaLogada.getId())
+                .orElseThrow(() -> new RuntimeException("Usuário não é um aluno válido."));
+
+        Monitoria monitoria = monitoriaRepository.findById(monitoriaId)
+                .orElseThrow(() -> new MonitoriaNotFoundException("Monitoria com ID " + monitoriaId + " não encontrada."));
+
+        if (monitoriaInscricoesRepository.existsByMonitoriaIdAndAlunoId(monitoriaId, aluno.getId())) {
+            throw new RuntimeException("Aluno já inscrito nesta monitoria.");
+        }
+
+        // --- NOVA LÓGICA DE VALIDAÇÃO DE VAGAS ---
+        long totalInscritos = monitoria.getInscricoes().size();
+        long inscritosBolsa = monitoria.getInscricoes().stream().filter(i -> i.getTipoVaga() == TipoVaga.BOLSA).count();
+        int vagasTotais = monitoria.getNumeroVaga();
+        int vagasBolsa = monitoria.getNumeroVagaBolsa();
+
+        if (totalInscritos >= vagasTotais) {
+            throw new RuntimeException("Não há mais vagas disponíveis para esta monitoria.");
+        }
+        if (inscricaoDTO.getTipoVaga() == TipoVaga.BOLSA && inscritosBolsa >= vagasBolsa) {
+            throw new RuntimeException("Não há mais vagas com bolsa disponíveis para esta monitoria.");
+        }
+        // --- FIM DA NOVA LÓGICA ---
+
+        MonitoriaInscritos novaInscricao = new MonitoriaInscritos();
+        novaInscricao.setMonitoria(monitoria);
+        novaInscricao.setAluno(aluno);
+        novaInscricao.setSelecionado(false);
+        novaInscricao.setTipoVaga(inscricaoDTO.getTipoVaga()); // Salva a escolha do aluno
+
+        MonitoriaInscritos inscricaoSalva = monitoriaInscricoesRepository.save(novaInscricao);
+
+        return monitoriaInscritosMapper.toResponseDTO(inscricaoSalva);
     }
 
     @Override
@@ -109,6 +154,36 @@ public class MonitoriaServiceImp implements MonitoriaService {
     }
 
     // --- MÉTODOS AUXILIARES ---
+
+    public MonitoriaInscritosResponseDTO realizarInscricao(Long monitoriaId, Pessoa pessoaLogada) {
+        // 1. Validação: Garante que a pessoa logada é um aluno
+        Aluno aluno = alunoRepository.findById(pessoaLogada.getId())
+                .orElseThrow(() -> new RuntimeException("Usuário não é um aluno válido."));
+
+        // 2. Validação: Garante que a monitoria existe
+        Monitoria monitoria = monitoriaRepository.findById(monitoriaId)
+                .orElseThrow(() -> new MonitoriaNotFoundException("Monitoria com ID " + monitoriaId + " não encontrada."));
+
+        // 3. Validação: Verifica se o aluno já está inscrito
+        if (monitoriaInscricoesRepository.existsByMonitoriaIdAndAlunoId(monitoriaId, aluno.getId())) {
+            throw new RuntimeException("Aluno já inscrito nesta monitoria."); // Idealmente, uma exceção customizada
+        }
+
+        // 4. Validação: Verifica se ainda há vagas
+        if (monitoria.getInscricoes().size() >= monitoria.getNumeroVaga()) {
+            throw new RuntimeException("Não há mais vagas disponíveis para esta monitoria.");
+        }
+
+        // 5. Lógica de Negócio: Cria e salva a nova inscrição
+        MonitoriaInscritos novaInscricao = new MonitoriaInscritos();
+        novaInscricao.setMonitoria(monitoria);
+        novaInscricao.setAluno(aluno);
+        novaInscricao.setSelecionado(false); // Padrão
+
+        MonitoriaInscritos inscricaoSalva = monitoriaInscricoesRepository.save(novaInscricao);
+
+        return monitoriaInscritosMapper.toResponseDTO(inscricaoSalva);
+    }
 
     private void gerenciarInscricoes(Monitoria monitoria, List<Long> alunoIds) {
         // Limpa as inscrições antigas. Graças ao 'orphanRemoval=true' na entidade Monitoria,

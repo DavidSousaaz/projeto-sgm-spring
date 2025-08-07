@@ -1,11 +1,14 @@
 package br.edu.ifpb.sgm.projeto_sgm.model;
 
 import br.edu.ifpb.sgm.projeto_sgm.model.embeddable.MonitoriaInscritoId;
+import br.edu.ifpb.sgm.projeto_sgm.model.TipoVaga;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+
 
 @Entity
 @Getter
@@ -17,6 +20,7 @@ public class MonitoriaInscritos {
 
     @EmbeddedId
     private MonitoriaInscritoId id = new MonitoriaInscritoId();
+
 
     @ManyToOne(fetch = FetchType.LAZY)
     @MapsId("monitoriaId") // Mapeia a parte 'monitoriaId' do EmbeddedId
@@ -30,4 +34,8 @@ public class MonitoriaInscritos {
 
     @Column(nullable = false)
     private boolean selecionado = false;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private TipoVaga tipoVaga;
 }

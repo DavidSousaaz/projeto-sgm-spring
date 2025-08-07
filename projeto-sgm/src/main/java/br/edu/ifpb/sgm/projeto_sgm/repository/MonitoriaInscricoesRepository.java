@@ -8,4 +8,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface MonitoriaInscricoesRepository extends JpaRepository<MonitoriaInscritos, MonitoriaInscritoId> {
     void deleteAllByMonitoriaId(Long monitoriaId);
+
+    boolean existsByMonitoriaIdAndAlunoId(Long monitoriaId, Long alunoId);
 }

@@ -44,18 +44,22 @@ public class SecurityConfig {
         return authConfig.getAuthenticationManager();
     }
 
-    // Bean de configuração do CORS centralizado
+    // Bean de configuração do CORS. Spring Security irá usá-lo automaticamente.
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173")); // URL do seu front-end React
+        // A URL exata do seu front-end
+        configuration.setAllowedOrigins(List.of("http://localhost:5174"));
+        // Métodos permitidos
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+        // Cabeçalhos permitidos
         configuration.setAllowedHeaders(List.of("*"));
+        // Permitir credenciais (cookies, tokens de autorização)
         configuration.setAllowCredentials(true);
-        configuration.setExposedHeaders(List.of("Authorization"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
+        // Aplica esta configuração para todas as rotas da sua API
+        source.registerCorsConfiguration("/api/**", configuration);
         return source;
     }
 
@@ -64,26 +68,28 @@ public class SecurityConfig {
         http
                 .cors(withDefaults())
                 .csrf(csrf -> csrf.disable())
-                .headers(headers -> headers
-                        .frameOptions(frame -> frame.sameOrigin())
-                )
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                // --- INÍCIO DO BLOCO CORRIGIDO ---
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/alunos").permitAll()
 
+                        // --- CORREÇÃO FINAL AQUI ---
+                        // Adicionando uma regra específica para a inscrição do aluno
+                        .requestMatchers(HttpMethod.POST, "/api/monitorias/{id}/inscricoes").hasRole(DISCENTE)
+
+                        // As regras de monitoria existentes continuam
                         .requestMatchers(HttpMethod.GET, "/api/monitorias/**").hasAnyRole(ADMIN, COORDENADOR, DOCENTE, DISCENTE)
                         .requestMatchers("/api/monitorias/**").hasAnyRole(ADMIN, COORDENADOR, DOCENTE)
 
+                        // O resto das regras
                         .requestMatchers(HttpMethod.PUT, "/api/alunos/{id}").hasAnyRole(ADMIN, COORDENADOR, DISCENTE)
                         .requestMatchers("/api/alunos/**").hasAnyRole(ADMIN, COORDENADOR)
 
-                        .requestMatchers("/api/pessoas/**").hasAnyRole(ADMIN, COORDENADOR) // Apenas admin/coord podem ver todas as pessoas
+                        .requestMatchers("/api/pessoas/**").hasAnyRole(ADMIN, COORDENADOR)
 
-                        // Regras que já estavam corretas
                         .requestMatchers("/api/instituicoes/**").hasRole(ADMIN)
                         .requestMatchers("/api/cursos/**").hasAnyRole(ADMIN, COORDENADOR)
                         .requestMatchers(HttpMethod.GET, "/api/disciplinas/**").hasAnyRole(ADMIN, COORDENADOR, DOCENTE)
@@ -96,7 +102,6 @@ public class SecurityConfig {
 
                         .anyRequest().authenticated()
                 )
-                // --- FIM DO BLOCO CORRIGIDO ---
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .logout(logout -> logout
                         .logoutUrl("/api/auth/logout")

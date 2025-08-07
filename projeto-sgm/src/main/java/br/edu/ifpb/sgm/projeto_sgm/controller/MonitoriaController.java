@@ -1,11 +1,17 @@
 package br.edu.ifpb.sgm.projeto_sgm.controller;
 
+import br.edu.ifpb.sgm.projeto_sgm.dto.InscricaoRequestDTO;
 import br.edu.ifpb.sgm.projeto_sgm.dto.MonitoriaRequestDTO;
 import br.edu.ifpb.sgm.projeto_sgm.dto.MonitoriaResponseDTO;
 import br.edu.ifpb.sgm.projeto_sgm.service.MonitoriaService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import br.edu.ifpb.sgm.projeto_sgm.dto.MonitoriaInscritosResponseDTO;
+import br.edu.ifpb.sgm.projeto_sgm.model.Pessoa;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 import java.util.List;
 
@@ -43,5 +49,15 @@ public class MonitoriaController {
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         monitoriaService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/inscricoes")
+    public ResponseEntity<MonitoriaInscritosResponseDTO> inscrever(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Pessoa pessoa,
+            @RequestBody InscricaoRequestDTO inscricaoDTO // Adiciona o corpo da requisição
+    ) {
+        MonitoriaInscritosResponseDTO inscricao = monitoriaService.realizarInscricao(id, pessoa, inscricaoDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(inscricao);
     }
 }
