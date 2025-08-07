@@ -4,8 +4,6 @@ import br.edu.ifpb.sgm.projeto_sgm.dto.AtividadeRequestDTO;
 import br.edu.ifpb.sgm.projeto_sgm.dto.AtividadeResponseDTO;
 import br.edu.ifpb.sgm.projeto_sgm.model.Atividade;
 import org.mapstruct.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 
 @Mapper(componentModel = "spring",
         uses = {MonitoriaMapper.class},
