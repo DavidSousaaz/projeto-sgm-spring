@@ -2,9 +2,12 @@ package br.edu.ifpb.sgm.projeto_sgm.controller;
 
 import br.edu.ifpb.sgm.projeto_sgm.dto.AlunoRequestDTO;
 import br.edu.ifpb.sgm.projeto_sgm.dto.AlunoResponseDTO;
+import br.edu.ifpb.sgm.projeto_sgm.dto.MonitoriaInscritosResponseDTO;
+import br.edu.ifpb.sgm.projeto_sgm.model.Pessoa;
 import br.edu.ifpb.sgm.projeto_sgm.service.AlunoService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -32,6 +35,15 @@ public class AlunoController {
     @GetMapping
     public ResponseEntity<List<AlunoResponseDTO>> findAll() {
         return ResponseEntity.ok(alunoService.findAll());
+    }
+
+    @GetMapping("/me/inscricoes")
+    public ResponseEntity<List<MonitoriaInscritosResponseDTO>> minhasInscricoes(
+            @AuthenticationPrincipal Pessoa pessoaLogada
+    ) {
+        // Este método precisará ser criado no AlunoService
+        List<MonitoriaInscritosResponseDTO> inscricoes = alunoService.findInscricoesByAluno(pessoaLogada.getId());
+        return ResponseEntity.ok(inscricoes);
     }
 
     @PutMapping("/{id}")

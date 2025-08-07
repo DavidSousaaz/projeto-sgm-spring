@@ -2,8 +2,10 @@ package br.edu.ifpb.sgm.projeto_sgm.service;
 
 import br.edu.ifpb.sgm.projeto_sgm.dto.AlunoRequestDTO;
 import br.edu.ifpb.sgm.projeto_sgm.dto.AlunoResponseDTO;
+import br.edu.ifpb.sgm.projeto_sgm.dto.MonitoriaInscritosResponseDTO;
 import br.edu.ifpb.sgm.projeto_sgm.exception.*;
 import br.edu.ifpb.sgm.projeto_sgm.mapper.AlunoMapper;
+import br.edu.ifpb.sgm.projeto_sgm.mapper.MonitoriaInscritosMapper;
 import br.edu.ifpb.sgm.projeto_sgm.mapper.PessoaMapper;
 import br.edu.ifpb.sgm.projeto_sgm.model.*;
 import br.edu.ifpb.sgm.projeto_sgm.repository.*;
@@ -31,7 +33,10 @@ public class AlunoServiceImp implements AlunoService {
     private final PessoaMapper pessoaMapper;
     private final PasswordEncoder passwordEncoder;
 
-    public AlunoServiceImp(AlunoRepository alunoRepository, PessoaRepository pessoaRepository, RoleRepository roleRepository, DisciplinaRepository disciplinaRepository, InstituicaoRepository instituicaoRepository, AlunoMapper alunoMapper, PessoaMapper pessoaMapper, PasswordEncoder passwordEncoder) {
+    private final MonitoriaInscricoesRepository monitoriaInscricoesRepository;
+    private final MonitoriaInscritosMapper monitoriaInscritosMapper;
+
+    public AlunoServiceImp(AlunoRepository alunoRepository, PessoaRepository pessoaRepository, RoleRepository roleRepository, DisciplinaRepository disciplinaRepository, InstituicaoRepository instituicaoRepository, AlunoMapper alunoMapper, PessoaMapper pessoaMapper, PasswordEncoder passwordEncoder, MonitoriaInscricoesRepository monitoriaInscricoesRepository, MonitoriaInscritosMapper monitoriaInscritosMapper) {
         this.alunoRepository = alunoRepository;
         this.pessoaRepository = pessoaRepository;
         this.roleRepository = roleRepository;
@@ -40,6 +45,8 @@ public class AlunoServiceImp implements AlunoService {
         this.alunoMapper = alunoMapper;
         this.pessoaMapper = pessoaMapper;
         this.passwordEncoder = passwordEncoder;
+        this.monitoriaInscricoesRepository = monitoriaInscricoesRepository;
+        this.monitoriaInscritosMapper = monitoriaInscritosMapper;
     }
 
     @Override
@@ -72,6 +79,15 @@ public class AlunoServiceImp implements AlunoService {
         // Altere a chamada para o novo método
         return alunoRepository.findAllByCadastradoIsTrue().stream()
                 .map(alunoMapper::toResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<MonitoriaInscritosResponseDTO> findInscricoesByAluno(Long alunoId) {
+        return monitoriaInscricoesRepository.findAllByAlunoId(alunoId) // Busca no banco
+                .stream()
+                .map(monitoriaInscritosMapper::toResponseDTO) // Converte cada inscrição para DTO
                 .collect(Collectors.toList());
     }
 
