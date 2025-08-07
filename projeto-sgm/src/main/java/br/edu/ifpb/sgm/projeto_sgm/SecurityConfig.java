@@ -76,15 +76,15 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/alunos").permitAll()
 
-                        // --- CORREÇÃO FINAL AQUI ---
-                        // Adicionando uma regra específica para a inscrição do aluno
+                        .requestMatchers(HttpMethod.PUT, "/api/monitorias/{monitoriaId}/inscricoes/{alunoId}/selecionar").hasAnyRole(ADMIN, COORDENADOR)
                         .requestMatchers(HttpMethod.POST, "/api/monitorias/{id}/inscricoes").hasRole(DISCENTE)
-
-                        // As regras de monitoria existentes continuam
                         .requestMatchers(HttpMethod.GET, "/api/monitorias/**").hasAnyRole(ADMIN, COORDENADOR, DOCENTE, DISCENTE)
                         .requestMatchers("/api/monitorias/**").hasAnyRole(ADMIN, COORDENADOR, DOCENTE)
 
-                        // O resto das regras
+                        // --- CORREÇÃO FINAL AQUI ---
+                        // Adicionando regra para que todos os perfis logados possam VER um aluno
+                        .requestMatchers(HttpMethod.GET, "/api/alunos/{id}").hasAnyRole(ADMIN, COORDENADOR, DOCENTE, DISCENTE)
+                        .requestMatchers(HttpMethod.GET, "/api/alunos/me/inscricoes").hasRole(DISCENTE)
                         .requestMatchers(HttpMethod.PUT, "/api/alunos/{id}").hasAnyRole(ADMIN, COORDENADOR, DISCENTE)
                         .requestMatchers("/api/alunos/**").hasAnyRole(ADMIN, COORDENADOR)
 
@@ -94,7 +94,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/cursos/**").hasAnyRole(ADMIN, COORDENADOR)
                         .requestMatchers(HttpMethod.GET, "/api/disciplinas/**").hasAnyRole(ADMIN, COORDENADOR, DOCENTE)
                         .requestMatchers("/api/disciplinas/**").hasAnyRole(ADMIN, COORDENADOR)
+
+                        .requestMatchers(HttpMethod.GET, "/api/processos-seletivos/**").authenticated()
                         .requestMatchers("/api/processos-seletivos/**").hasAnyRole(ADMIN, COORDENADOR)
+
                         .requestMatchers(HttpMethod.GET, "/api/atividades/**").authenticated()
                         .requestMatchers("/api/atividades/**").hasAnyRole(ADMIN, COORDENADOR, DOCENTE, DISCENTE)
                         .requestMatchers(HttpMethod.GET, "/api/professores/**").authenticated()

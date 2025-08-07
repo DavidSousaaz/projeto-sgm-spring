@@ -1,9 +1,6 @@
 package br.edu.ifpb.sgm.projeto_sgm.controller;
 
-import br.edu.ifpb.sgm.projeto_sgm.dto.InscricaoRequestDTO;
-import br.edu.ifpb.sgm.projeto_sgm.dto.MonitoriaInscritosResponseDTO;
-import br.edu.ifpb.sgm.projeto_sgm.dto.MonitoriaRequestDTO;
-import br.edu.ifpb.sgm.projeto_sgm.dto.MonitoriaResponseDTO;
+import br.edu.ifpb.sgm.projeto_sgm.dto.*;
 import br.edu.ifpb.sgm.projeto_sgm.model.Pessoa;
 import br.edu.ifpb.sgm.projeto_sgm.service.MonitoriaService;
 import org.springframework.http.HttpStatus;
@@ -40,9 +37,23 @@ public class MonitoriaController {
         return ResponseEntity.ok(monitoriaService.findAll(processoId));
     }
 
+    @GetMapping("/dashboard")
+    public ResponseEntity<List<DashboardMonitoriaDTO>> getDashboard() {
+        return ResponseEntity.ok(monitoriaService.getDashboardData());
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<MonitoriaResponseDTO> update(@PathVariable Long id, @RequestBody MonitoriaRequestDTO dto) {
         return ResponseEntity.ok(monitoriaService.update(id, dto));
+    }
+
+    @PutMapping("/{monitoriaId}/inscricoes/{alunoId}/selecionar")
+    public ResponseEntity<MonitoriaInscritosResponseDTO> selecionarMonitor(
+            @PathVariable Long monitoriaId,
+            @PathVariable Long alunoId
+    ) {
+        MonitoriaInscritosResponseDTO inscricao = monitoriaService.selecionarMonitor(monitoriaId, alunoId);
+        return ResponseEntity.ok(inscricao);
     }
 
     @DeleteMapping("/{id}")

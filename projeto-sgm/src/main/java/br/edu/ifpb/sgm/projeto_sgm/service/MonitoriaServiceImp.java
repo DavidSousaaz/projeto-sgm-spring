@@ -4,10 +4,12 @@ import br.edu.ifpb.sgm.projeto_sgm.dto.InscricaoRequestDTO;
 import br.edu.ifpb.sgm.projeto_sgm.dto.MonitoriaInscritosResponseDTO;
 import br.edu.ifpb.sgm.projeto_sgm.dto.MonitoriaRequestDTO;
 import br.edu.ifpb.sgm.projeto_sgm.dto.MonitoriaResponseDTO;
+import br.edu.ifpb.sgm.projeto_sgm.dto.DashboardMonitoriaDTO;
 import br.edu.ifpb.sgm.projeto_sgm.exception.*;
 import br.edu.ifpb.sgm.projeto_sgm.mapper.MonitoriaInscritosMapper;
 import br.edu.ifpb.sgm.projeto_sgm.mapper.MonitoriaMapper;
 import br.edu.ifpb.sgm.projeto_sgm.model.*;
+import br.edu.ifpb.sgm.projeto_sgm.model.embeddable.MonitoriaInscritoId;
 import br.edu.ifpb.sgm.projeto_sgm.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -151,6 +153,33 @@ public class MonitoriaServiceImp implements MonitoriaService {
         return monitoriaInscritosMapper.toResponseDTO(inscricaoSalva);
     }
 
+    @Override
+    public MonitoriaInscritosResponseDTO selecionarMonitor(Long monitoriaId, Long alunoId) {
+        MonitoriaInscritoId inscricaoId = new MonitoriaInscritoId(monitoriaId, alunoId);
+
+        MonitoriaInscritos inscricao = monitoriaInscricoesRepository.findById(inscricaoId)
+                .orElseThrow(() -> new RuntimeException("Inscrição não encontrada."));
+
+        Monitoria monitoria = inscricao.getMonitoria();
+
+        // Lógica de negócio: verifica se ainda há vagas com bolsa para preencher
+        long selecionadosBolsa = monitoria.getInscricoes().stream()
+                .filter(i -> i.isSelecionado() && i.getTipoVaga() == TipoVaga.BOLSA)
+                .count();
+
+        // Se o aluno se inscreveu para bolsa, mas as vagas de bolsa já foram preenchidas,
+        // ele é selecionado como voluntário.
+        if (inscricao.getTipoVaga() == TipoVaga.BOLSA && selecionadosBolsa >= monitoria.getNumeroVagaBolsa()) {
+            inscricao.setTipoVaga(TipoVaga.VOLUNTARIA);
+            // Poderia adicionar uma notificação/lógica extra aqui
+        }
+
+        inscricao.setSelecionado(true);
+        MonitoriaInscritos inscricaoSalva = monitoriaInscricoesRepository.save(inscricao);
+
+        return monitoriaInscritosMapper.toResponseDTO(inscricaoSalva);
+    }
+
     private void gerenciarInscricoes(Monitoria monitoria, List<Long> alunoIds) {
         monitoria.getInscricoes().clear();
 
@@ -185,5 +214,13 @@ public class MonitoriaServiceImp implements MonitoriaService {
     private ProcessoSeletivo buscarProcessoSeletivo(Long id) {
         return processoSeletivoRepository.findById(id)
                 .orElseThrow(() -> new ProcessoSeletivoNotFoundException("Processo Seletivo com ID " + id + " não encontrado."));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<DashboardMonitoriaDTO> getDashboardData() {
+        return monitoriaRepository.findAll().stream()
+                .map(monitoriaMapper::toDashboardDTO)
+                .collect(Collectors.toList());
     }
 }
